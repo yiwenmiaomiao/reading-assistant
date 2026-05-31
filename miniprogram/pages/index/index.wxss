@@ -1,0 +1,137 @@
+.home-page {
+  min-height: 0;
+  background-color: #fdfdfe;
+  background-image: 
+    radial-gradient(circle at 80% 10%, rgba(255, 180, 200, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 15% 30%, rgba(200, 160, 255, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(160, 200, 255, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 20% 90%, rgba(255, 200, 220, 0.25) 0%, transparent 50%);
+  background-attachment: fixed; 
+}
+
+.hero {
+  display: flex;
+  align-items: flex-end;
+  min-height: 260rpx;
+  padding: 36rpx 8rpx 30rpx;
+}
+
+.hero-kicker {
+  color: #8049b4;
+  font-size: 24rpx;
+  font-weight: 400;
+}
+
+.hero-title {
+  max-width: 620rpx;
+  margin-top: 14rpx;
+  color: #10131f;
+  font-size: 50rpx;
+  font-weight: 300;
+  line-height: 1.25;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+}
+
+/* 更新统计卡片为毛玻璃 */
+.stat-card {
+  min-height: 180rpx;
+  padding: 26rpx;
+  border-radius: 26rpx;
+  
+  /* 毛玻璃核心 */
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(30rpx);
+  -webkit-backdrop-filter: blur(30rpx);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    0 16rpx 40rpx rgba(31, 38, 135, 0.05), 
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.9);
+}
+
+.stat-label,
+.stat-note {
+  display: block;
+  color: #6b7280;
+  font-size: 24rpx;
+  font-weight: 300;
+}
+
+.stat-number {
+  display: block;
+  margin: 18rpx 0 10rpx;
+  color: #8049b4;
+  font-size: 58rpx;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.ranking-card {
+  padding: 10rpx 0 0;
+
+  /* 毛玻璃核心 */
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(30rpx);
+  -webkit-backdrop-filter: blur(30rpx);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow: 
+    0 16rpx 40rpx rgba(31, 38, 135, 0.05), 
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.9);
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  min-height: 108rpx;
+  padding: 0 28rpx;
+  border-bottom: 1rpx solid #f1f3f6;
+}
+
+.rank-index {
+  width: 42rpx;
+  color: #8049b4;
+  font-size: 30rpx;
+  font-weight: 300;
+  text-align: center;
+}
+
+.rank-user {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-name {
+  color: #10131f;
+  font-size: 28rpx;
+  font-weight: 300;
+}
+
+.rank-sub {
+  margin-top: 6rpx;
+  color: #6b7280;
+  font-size: 24rpx;
+  font-weight: 300;
+}
+
+.rank-count {
+  color: #10131f;
+  font-size: 28rpx;
+  font-weight: 300;
+}
+
+.ranking-more {
+  padding: 26rpx;
+  color: #8049b4;
+  font-size: 26rpx;
+  font-weight: 300;
+  text-align: center;
+}
+
+.compact-empty {
+  padding: 44rpx 28rpx;
+}

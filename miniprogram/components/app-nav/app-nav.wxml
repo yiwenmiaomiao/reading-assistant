@@ -1,0 +1,12 @@
+<view class="nav-placeholder" style="height: {{totalHeight}}px;"></view>
+<view class="app-nav {{variantClass}}" style="height: {{totalHeight}}px;">
+  <view class="status-space" style="height: {{statusBarHeight}}px;"></view>
+  <view class="nav-row" style="height: {{navBarHeight}}px;">
+    <button wx:if="{{canBack}}" class="nav-back" bindtap="goBack" aria-label="返回上一页">
+      <text class="back-icon">‹</text>
+    </button>
+    <view wx:else class="nav-back nav-back-placeholder"></view>
+    <view class="nav-title">{{title}}</view>
+    <view class="nav-right"></view>
+  </view>
+</view>

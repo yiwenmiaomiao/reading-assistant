@@ -1,0 +1,20 @@
+<app-nav title="本周排名" can-back="{{true}}"></app-nav>
+<scroll-view class="page ranking-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <view class="rank-detail-head">
+    <view class="head-title">TOP 20</view>
+    <view class="head-sub">按本周阅读分排序，笔记数和书籍数用于同分参考</view>
+  </view>
+
+  <block wx:if="{{rankings.length}}">
+    <view class="card rank-detail-row" wx:for="{{rankings}}" wx:key="openid">
+      <view class="rank-number">{{item.rank}}</view>
+      <view class="avatar">{{item.avatarText}}</view>
+      <view class="rank-person">
+        <view class="rank-name">{{item.nickname}}</view>
+        <view class="rank-sub">{{item.bookCount}} 本书 · {{item.noteCount}} 条笔记</view>
+      </view>
+      <view class="rank-note-count">{{item.readingScoreDisplay}}</view>
+    </view>
+  </block>
+  <view wx:else class="empty">本周还没有排名数据</view>
+</scroll-view>

@@ -1,0 +1,84 @@
+const cloud = require('wx-server-sdk');
+
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
+
+const db = cloud.database();
+const _ = db.command;
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function startOfWeek(date) {
+  const dayStart = startOfDay(date);
+  const day = dayStart.getDay() || 7;
+  dayStart.setDate(dayStart.getDate() - day + 1);
+  return dayStart;
+}
+
+function getReadingScore(note) {
+  const excerptScore = `${note.content || ''}`.trim() ? 1 : 0;
+  const reflection = `${note.reflection || ''}`.trim();
+  return excerptScore + (reflection.length > 20 ? 1.5 : 0);
+}
+
+function formatScore(score) {
+  const value = Math.round(score * 10) / 10;
+  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+exports.main = async () => {
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const weekStart = startOfWeek(now);
+
+  const todayResult = await db.collection('notes').where({
+    isDeleted: _.neq(true),
+    createdAt: _.gte(todayStart)
+  }).count();
+
+  const weekResult = await db.collection('notes').where({
+    isDeleted: _.neq(true),
+    createdAt: _.gte(weekStart)
+  }).get();
+
+  const grouped = {};
+  weekResult.data.forEach((note) => {
+    const openid = note._openid;
+    if (!grouped[openid]) grouped[openid] = { openid, noteCount: 0, readingScore: 0, books: {} };
+    grouped[openid].noteCount += 1;
+    grouped[openid].readingScore += getReadingScore(note);
+    if (note.bookTitle) grouped[openid].books[note.bookTitle] = true;
+  });
+
+  const usersResult = await db.collection('users').get();
+  const users = usersResult.data.reduce((map, user) => {
+    map[user._openid] = user;
+    return map;
+  }, {});
+
+  const rankings = Object.keys(grouped)
+    .map((openid) => {
+      const user = users[openid] || {};
+      return {
+        openid,
+        nickname: user.nickname || '读者',
+        avatar: user.avatar || '',
+        noteCount: grouped[openid].noteCount,
+        bookCount: Object.keys(grouped[openid].books).length,
+        readingScore: grouped[openid].readingScore,
+        readingScoreText: formatScore(grouped[openid].readingScore),
+        readingScoreDisplay: `${formatScore(grouped[openid].readingScore)} 分`
+      };
+    })
+    .filter((item) => item.readingScore > 0)
+    .sort((a, b) => b.readingScore - a.readingScore || b.noteCount - a.noteCount || b.bookCount - a.bookCount)
+    .map((item, index) => ({ ...item, rank: index + 1 }));
+
+  return {
+    todayCount: todayResult.total,
+    weekCount: weekResult.data.length,
+    rankings,
+    topThree: rankings.slice(0, 3)
+  };
+};

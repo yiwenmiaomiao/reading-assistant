@@ -1,0 +1,218 @@
+/* 全局容器：避开底部横杠，确保在最顶层 */
+.tab-bar-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+  pointer-events: auto;
+  z-index: 9999;
+}
+
+/* =========================================
+  1. 母体轨道：高级 Switch 紫色【凸出悬浮晶体底盘】
+  =========================================
+*/
+.tab-bar {
+  pointer-events: auto;
+  position: relative;
+  display: flex;
+  /* 【位置调整】：下边距从 24rpx 缩减至 10rpx，让导航栏整体更加克制地贴近底部 */
+  margin: 0 40rpx 10rpx 40rpx;
+  height: 108rpx;
+  border-radius: 54rpx;
+  overflow: hidden;
+  will-change: transform;
+  transform: translateZ(0);
+
+  /* 【液态高透调色】：大幅降低底色浓度（接近纯无色高透），仅保留极细微的白金至淡紫的液态流光 */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.877) 0%, rgba(242, 228, 255, 0.812) 100%);
+  
+  /* 【光学折射放大】：将模糊拉高到 40px，饱和度拉高到 160%，实现示例图那种吞噬背景的高透玻璃感 */
+  backdrop-filter: blur(40px) saturate(160%);
+  -webkit-backdrop-filter: blur(40px) saturate(160%);
+
+  /* 极致纤细的水晶边缘切面线（高透玻璃的灵动感） */
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
+
+  /* 【保持凸出物理特效（Convex Plate），但弱化暗影、强化晶体高光】 */
+  box-shadow: 
+    /* 1. 晶体环境柔影：由于材质变高透，物理阴影变淡，避免了脏感 */
+    0 16rpx 40rpx -6rpx rgba(45, 30, 90, 0.09),
+    0 4rpx 12rpx -2rpx rgba(45, 30, 90, 0.04),
+    
+    /* 2. 托盘顶边缘【超亮迎光线】：强化表面向外突起的晶莹切面 */
+    inset 0 3rpx 4rpx rgba(255, 255, 255, 0.65),
+    
+    /* 3. 托盘底边【微紫折射沉积】：背光转折处，玻璃体内部沉淀出的轻盈紫光 */
+    inset 0 -2rpx 5rpx rgba(170, 149, 255, 0.12);
+}
+
+/* 滑动轨道指示器 */
+.slider-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  
+  /* 【兼容核心】：宽度使用视口绝对计算（屏幕宽度 - 两侧40rpx边距）/ 3 */
+  width: calc((100vw - 80rpx) / 3);
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
+  will-change: transform;
+  
+  transform: translate3d(0, 0, 0);
+  
+  /* 默认无动画，用于生命周期内的静默同步吸附 */
+  transition: none !important;
+}
+
+/* ==========================================================
+  ★ 动态动效锁：仅在用户物理点击时，释放 0.28s 的 Apple 级平滑过渡
+  ==========================================================
+*/
+.is-animating .slider-indicator {
+  transition: transform 0.28s cubic-bezier(0.55, 0, 1, 1) !important;
+}
+
+/* =========================================
+  2. 核心滑块：双向精雕高光、色彩同步的玻璃块
+  =========================================
+*/
+.slider-glass {
+  position: relative; /* 必须加 relative，用于两层超锐利高光条的绝对定位 */
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 26rpx;
+  will-change: transform;
+  border: 1rpx solid rgba(255, 255, 255, 0.45);
+
+  /* 基色保持与未激活 Logo (#aa95ff) 绝对同步 */
+  background: linear-gradient(135deg, rgba(160,120,245,0.75), rgba(130,90,220,0.82)),
+  rgba(255,255,255,0.55);
+  
+  /* 独立折射放大器 */
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+
+  /* 无边框设计，形体边缘交由 ::before / ::after 的 1px 刀锋高光接管 */
+  border: none;
+
+  /* 大面积环境光晕与暗衬 */
+  box-shadow:
+  /* 远影扩散 — 制造"悬浮在托盘上方"的空间感 */
+  0 24rpx 80rpx -6rpx rgba(155, 110, 235, 0.38),
+  /* 中影过渡 */
+  0 12rpx 40rpx -2rpx rgba(140, 95, 220, 0.28),
+  /* 近影锐利 */
+  0 4rpx 12rpx rgba(120, 80, 200, 0.15),
+  /* 内部顶部白高光 — 玻璃厚度感 */
+  inset 0 2rpx 0 rgba(255, 255, 255, 0.75);
+}
+
+/* =========================================
+  ★ 核心新增：Layer ① 左上角 1px 刀锋菲涅尔高光
+  =========================================
+*/
+.slider-glass::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 26rpx;
+  padding: 2rpx; /* 极细的高光线条宽度 (1px) */
+  
+  /* 135deg 倾斜，让浅紫白色强高光精准锁死在左上角，并向两侧优雅消隐 */
+  background: linear-gradient(
+    135deg,
+    rgba(255, 248, 255, 0.95) 0%,
+    rgba(245, 235, 255, 0.4) 20%,
+    transparent 45%
+  );
+  
+  /* 顶级黑魔法：利用镂空遮罩将内部扣空，只留下圆角边缘 1px 的超清高光线 */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* =========================================
+  ★ 核心新增：Layer ② 右下角 1px 晶体环境反光
+  =========================================
+*/
+.slider-glass::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 26rpx;
+  padding: 2rpx; /* 1px 宽度 */
+  
+  /* 315deg 反向倾斜，捕获右下角暗处折射，用稍深的浅紫色勾勒背面清晰度 */
+  background: linear-gradient(
+    315deg,
+    rgba(225, 205, 255, 0.75) 0%,
+    rgba(180, 150, 255, 0.3) 15%,
+    transparent 35%
+  );
+  
+  /* 同样的排除遮罩技术，保证线描般的锐利度 */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* =========================================
+  3. 菜单项与 Logo 视觉逻辑
+  =========================================
+*/
+.tab-item {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  z-index: 2;
+}
+
+.icon {
+  width: 44rpx;
+  height: 44rpx;
+  background-color: #aa95ff; 
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  
+  will-change: transform, filter;
+}
+
+.active .icon {
+  background-color: #ffffff;
+  /* 稍微收敛缩放度，配合高速切页的沉稳克制感 */
+  transform: scale(1.05) translateY(-1rpx);
+  filter: drop-shadow(0 2rpx 6rpx rgba(255, 255, 255, 0.45));
+}
+
+/* SVG 图标路径保持完整 */
+.icon-home {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/%3E%3Cpolyline points='9 22 9 12 15 12 15 22'/%3E%3C/svg%3E");
+}
+
+.icon-book {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+}
+
+.icon-user {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E");
+}

@@ -1,0 +1,312 @@
+@import "../../styles/note-detail.wxss";
+
+.checkins-page {
+  width: 100vw;
+  min-height: 0;
+  padding: 28rpx 28rpx 150rpx;
+  background-color: #fdfdfe;
+  background-image:
+    radial-gradient(circle at 80% 10%, rgba(255, 180, 200, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 15% 30%, rgba(200, 160, 255, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(160, 200, 255, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 20% 90%, rgba(255, 200, 220, 0.25) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+.streak-card,
+.calendar-card {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(30rpx);
+  -webkit-backdrop-filter: blur(30rpx);
+  border: 2rpx solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 16rpx 40rpx rgba(31, 38, 135, 0.05),
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.9);
+}
+
+.streak-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 260rpx;
+  padding: 36rpx;
+  border-radius: 38rpx;
+}
+
+.streak-card::after {
+  content: '';
+  position: absolute;
+  right: -80rpx;
+  bottom: -100rpx;
+  width: 280rpx;
+  height: 280rpx;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(128, 73, 180, 0.18) 0%, rgba(128, 73, 180, 0) 68%);
+  pointer-events: none;
+}
+
+.streak-kicker {
+  color: #8049b4;
+  font-size: 26rpx;
+  font-weight: 300;
+  letter-spacing: 2rpx;
+}
+
+.streak-number-row {
+  display: flex;
+  align-items: flex-end;
+  margin-top: 18rpx;
+}
+
+.streak-number {
+  color: #10131f;
+  font-size: 112rpx;
+  font-weight: 300;
+  line-height: 0.95;
+}
+
+.streak-unit {
+  margin-left: 12rpx;
+  margin-bottom: 14rpx;
+  color: #8049b4;
+  font-size: 32rpx;
+  font-weight: 300;
+}
+
+.streak-desc {
+  margin-top: 22rpx;
+  color: #6b7280;
+  font-size: 26rpx;
+  font-weight: 300;
+}
+
+/* 2. 打卡天数卡片的流光激活态 */
+.streak-active {
+  border-color: transparent;
+  box-shadow:
+    0 16rpx 40rpx rgba(200, 160, 255, 0.2),
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.9);
+}
+
+.streak-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  padding: 4rpx;
+  border-radius: 38rpx;
+  background: linear-gradient(90deg, #ffb4c8, #c8a0ff, #a0c8ff, #ffe0e9, #ffb4c8);
+  background-size: 200% 100%;
+  animation: streakBorderFlow 3s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.streak-kicker,
+.streak-number-row,
+.streak-desc {
+  position: relative;
+  z-index: 3;
+}
+
+@keyframes streakBorderFlow {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: -200% 0%;
+  }
+}
+
+.calendar-card {
+  margin-top: 28rpx;
+  padding: 30rpx 24rpx 28rpx;
+  border-radius: 38rpx;
+}
+
+.calendar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 0 6rpx 24rpx;
+}
+
+.calendar-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.month-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 12rpx;
+  max-width: 100%;
+  padding: 6rpx;
+  background: rgba(255, 255, 255, 0.34);
+  border: 1rpx solid rgba(255, 255, 255, 0.72);
+  border-radius: 28rpx;
+  box-shadow: inset 0 2rpx 6rpx rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18rpx);
+  -webkit-backdrop-filter: blur(18rpx);
+}
+
+.month-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  color: #8049b4;
+  background: rgba(246, 235, 255, 0.76);
+  border-radius: 20rpx;
+  font-size: 42rpx;
+  font-weight: 300;
+  line-height: 1;
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.month-nav-btn:active {
+  transform: scale(0.92);
+}
+
+.month-nav-btn.disabled {
+  opacity: 0.32;
+}
+
+.month-picker {
+  flex: 1;
+  min-width: 0;
+}
+
+.calendar-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 230rpx;
+  height: 56rpx;
+  padding: 0 16rpx;
+  color: #10131f;
+  font-size: 36rpx;
+  font-weight: 300;
+  white-space: nowrap;
+}
+
+.month-picker-chevron {
+  margin-left: 8rpx;
+  color: #8049b4;
+  font-size: 26rpx;
+  line-height: 1;
+}
+
+.calendar-subtitle {
+  margin-top: 20rpx;
+  color: #6b7280;
+  font-size: 24rpx;
+  font-weight: 300;
+}
+
+.calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  min-height: 48rpx;
+  padding: 0 16rpx;
+  color: #8049b4;
+  background: rgba(246, 235, 255, 0.72);
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  font-weight: 300;
+  white-space: nowrap;
+}
+
+.legend-dot {
+  width: 16rpx;
+  height: 16rpx;
+  background: rgba(246, 235, 255, 0.92);
+  border: 2rpx solid #8049b4;
+  border-radius: 6rpx;
+}
+
+.weekday-row,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.weekday {
+  padding: 16rpx 0;
+  color: #8d94a3;
+  font-size: 22rpx;
+  font-weight: 300;
+  text-align: center;
+}
+
+.calendar-grid {
+  gap: 10rpx;
+}
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 82rpx;
+  border-radius: 22rpx;
+  color: #a4a9b4;
+  font-weight: 300;
+  transition: transform 180ms ease, background 180ms ease;
+}
+
+.calendar-day:active {
+  transform: scale(0.94);
+}
+
+.calendar-day.blank {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.calendar-day.checked {
+  color: #8049b4;
+  background: rgba(246, 235, 255, 0.92);
+  box-shadow:
+    inset 0 2rpx 8rpx rgba(255, 255, 255, 0.75),
+    0 8rpx 18rpx rgba(128, 73, 180, 0.08);
+}
+
+.calendar-day.unchecked {
+  color: #a4a9b4;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.calendar-day.future {
+  opacity: 0.42;
+}
+
+.calendar-day.today {
+  border: 1.5rpx solid rgba(128, 73, 180, 0.22);
+}
+
+.day-number {
+  font-size: 28rpx;
+  line-height: 1;
+}
+
+.day-count {
+  margin-top: 8rpx;
+  font-size: 18rpx;
+  line-height: 1;
+}
+
+.checkin-detail-mask {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14rpx);
+  -webkit-backdrop-filter: blur(14rpx);
+}

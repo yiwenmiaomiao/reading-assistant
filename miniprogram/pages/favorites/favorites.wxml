@@ -1,0 +1,18 @@
+<app-nav title="收藏笔记" can-back="{{true}}"></app-nav>
+<scroll-view class="page favorites-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <block wx:if="{{notes.length}}">
+    <view class="card" wx:for="{{notes}}" wx:key="_id">
+      <view class="note-title">{{item.bookTitle}}</view>
+      <view class="note-meta">
+        <view class="avatar small-avatar">{{item.avatarText}}</view>
+        <text>{{item.user.nickname}}</text>
+        <text>{{item.createdLabel}}</text>
+      </view>
+      <view class="note-content">{{item.excerpt}}</view>
+      <button class="neon-capsule-btn fav-active favorite-btn" data-id="{{item._id}}" bindtap="unfavorite">
+        <view class="fav-star-icon"></view>
+      </button>
+    </view>
+  </block>
+  <view wx:else class="empty">还没有收藏笔记</view>
+</scroll-view>

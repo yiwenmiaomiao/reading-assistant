@@ -1,0 +1,22 @@
+<view class="tab-bar-container">
+  <view class="tab-bar {{animating ? 'is-animating' : ''}}">
+    
+    <view class="slider-indicator" style="{{sliderStyle}}">
+      <view class="slider-glass"></view>
+    </view>
+
+    <view 
+      wx:for="{{list}}" 
+      wx:key="index" 
+      class="tab-item {{activeIndex === index ? 'active' : ''}}" 
+      data-path="{{item.pagePath}}" 
+      data-index="{{index}}" 
+      bindtap="switchTab"
+    >
+      <view class="icon {{item.iconClass}}"></view>
+    </view>
+    
+  </view>
+</view>
+
+<draggable-fab bind:tap="goCreate"></draggable-fab>

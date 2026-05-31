@@ -1,0 +1,20 @@
+<app-nav title="阅读统计" can-back="{{true}}"></app-nav>
+<scroll-view class="page reading-stats-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <view class="section-title">高频书籍</view>
+  <view class="card list-card" wx:if="{{stats.books.length}}">
+    <view class="stat-row" wx:for="{{stats.books}}" wx:key="name">
+      <text>{{item.name}}</text>
+      <text class="row-count">{{item.count}} 条</text>
+    </view>
+  </view>
+  <view wx:else class="empty">还没有书籍统计</view>
+
+  <view class="section-title">常用标签</view>
+  <view class="card list-card" wx:if="{{stats.tags.length}}">
+    <view class="stat-row" wx:for="{{stats.tags}}" wx:key="name">
+      <text>{{item.name}}</text>
+      <text class="row-count">{{item.count}} 次</text>
+    </view>
+  </view>
+  <view wx:else class="empty">还没有标签统计</view>
+</scroll-view>

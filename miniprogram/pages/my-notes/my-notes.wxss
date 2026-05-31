@@ -1,0 +1,207 @@
+/* 添加全局盒模型设定，确保 padding 不会撑破布局 */
+page {
+  box-sizing: border-box;
+}
+
+/* --- 整个页面容器：添加弥散光晕背景 --- */
+.my-notes-shell {
+  width: 100vw;
+  min-height: 0;
+  overflow: visible;
+  
+  /* 底色设为偏白的极浅灰蓝 */
+  background-color: #fdfdfe;
+  
+  /* 核心：叠加四个不同位置的径向渐变，模拟粉、紫、蓝的不规则光晕块 */
+  background-image: 
+    radial-gradient(circle at 80% 10%, rgba(255, 180, 200, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 15% 30%, rgba(200, 160, 255, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(160, 200, 255, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 20% 90%, rgba(255, 200, 220, 0.25) 0%, transparent 50%);
+  /* 让背景光晕固定，列表滚动时更有穿透感 */
+  background-attachment: fixed; 
+  box-sizing: border-box;
+}
+
+.my-search {
+  z-index: 10;
+  display: flex;
+  gap: 14rpx;
+  /* 将原本的 0 改为 24rpx (或者你觉得合适的间距，如 30rpx) */
+  margin: 24rpx 28rpx 20rpx; 
+  padding: 18rpx;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 24rpx;
+  box-shadow: 0 18rpx 42rpx rgba(15, 23, 42, 0.07);
+  backdrop-filter: blur(24rpx);
+  box-sizing: border-box;
+}
+
+
+
+.my-search .input {
+  flex: 1;
+  font-weight: 300;
+}
+
+.my-list {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 28rpx calc(32rpx + env(safe-area-inset-bottom));
+}
+
+/* --- 笔记卡片：高级毛玻璃质感 --- */
+.my-note-card {
+  margin-top: 28rpx;
+  width: calc(100vw - 56rpx);
+  box-sizing: border-box;
+  padding: 32rpx; /* 增加内边距，让内容不要贴边，呼吸感更强 */
+  
+  /* 毛玻璃核心三大件：半透明底色 + 模糊滤镜 + 玻璃切边 */
+  background: rgba(255, 255, 255, 0.45); /* 45%透明度的白底 */
+  backdrop-filter: blur(30rpx); /* 强烈的高斯模糊 */
+  -webkit-backdrop-filter: blur(30rpx); /* 兼容苹果机型 */
+  border: 2rpx solid rgba(255, 255, 255, 0.8); /* 明显的白色反光描边 */
+  border-radius: 36rpx; /* 大圆角，贴近参考图的圆润感 */
+  
+  /* 外部轻微弥散阴影托起卡片 + 内部顶部高光增强立体感 */
+  box-shadow: 
+    0 16rpx 40rpx rgba(31, 38, 135, 0.05), 
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.9);
+}
+
+/* 顺便微调一下卡片内的文字排版，配合玻璃质感 */
+.note-title {
+  font-size: 34rpx;
+  font-weight: 300;
+  color: #2c3e50; /* 深色标题，对比度更清晰 */
+  margin-bottom: 12rpx;
+}
+
+.note-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 24rpx;
+  font-weight: 300;
+  color: #7f8c8d;
+  margin-bottom: 20rpx;
+}
+
+.note-content {
+  font-size: 28rpx;
+  font-weight: 300;
+  color: #34495e;
+  line-height: 1.6;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+/* 笔记标签容器 */
+.note-tags {
+  margin-top: 18rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+/* 标签：同笔记菜单页面样式 */
+.tag {
+  padding: 14rpx 28rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  font-weight: 300;
+  color: #8049b4;
+  letter-spacing: 0.5rpx;
+  background: linear-gradient(135deg, rgba(255, 180, 200, 0.15), rgba(200, 150, 255, 0.15));
+  backdrop-filter: blur(20rpx);
+  border: 1.5rpx solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 6rpx 16rpx rgba(175, 82, 222, 0.06),
+    inset 0 2rpx 8rpx rgba(255, 255, 255, 0.7);
+}
+
+/* 按钮父容器 */
+.my-actions {
+  display: flex;
+  justify-content: flex-end; /* 让自适应宽度的按钮靠右对齐（如果是靠左对齐可以删掉这行） */
+  gap: 24rpx; 
+  margin-top: 24rpx;
+}
+
+/* --- 果冻毛玻璃按钮基础样式 --- */
+.small-btn {
+  position: relative;
+  min-height: 60rpx !important;
+  padding: 0 32rpx !important;
+  border-radius: 20rpx !important;
+  font-size: 24rpx !important;
+  font-weight: 400 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* 毛玻璃核心 */
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(24rpx);
+  -webkit-backdrop-filter: blur(24rpx);
+  border: none !important;
+  z-index: 1;
+  transition: transform 0.2s ease;
+}
+
+.small-btn:active {
+  transform: scale(0.95);
+}
+
+/* 1. 编辑按钮：同发布笔记按钮样式 */
+.btn-edit {
+  color: #5E2B97 !important;
+  box-shadow:
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.8),
+    0 8rpx 32rpx rgba(200, 160, 255, 0.25) !important;
+}
+
+.btn-edit::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 20rpx;
+  padding: 3rpx;
+  background: linear-gradient(90deg, #ffb4c8, #c8a0ff, #a0c8ff, #ffe0e9, #ffb4c8);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* 2. 删除按钮：同编辑笔记页面删除笔记按钮样式 */
+.btn-delete {
+  color: #6b7280 !important;
+  font-weight: 400 !important;
+  box-shadow:
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.8),
+    0 8rpx 24rpx rgba(107, 114, 128, 0.1) !important;
+}
+
+.btn-delete::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 20rpx;
+  padding: 3rpx;
+  background: linear-gradient(135deg, #e5e7eb, #9ca3af);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+
+/* --- 点击反馈 --- */
+.small-btn:active {
+  transform: scale(0.96); /* 参考图中这种按钮按下一般是整体微缩 */
+  box-shadow: 
+    inset 2rpx 2rpx 6rpx rgba(255, 255, 255, 0.8),
+    inset -2rpx -2rpx 6rpx rgba(0, 0, 0, 0.05),
+    0 4rpx 10rpx rgba(0, 0, 0, 0.1) !important;
+}

@@ -1,0 +1,21 @@
+<app-nav title="我的成就" can-back="{{true}}"></app-nav>
+<scroll-view class="page achievements-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <view class="achievement-grid">
+    <view class="card achievement-card {{stats.totalNotes > 0 ? 'active' : ''}}">
+      <view class="achievement-title">初笔</view>
+      <view class="achievement-desc">发布第一条读书笔记</view>
+    </view>
+    <view class="card achievement-card {{stats.totalBooks >= 10 ? 'active' : ''}}">
+      <view class="achievement-title">博览群书</view>
+      <view class="achievement-desc">记录 10 本不同书籍</view>
+    </view>
+    <view class="card achievement-card {{stats.totalNotes >= 100 ? 'active' : ''}}">
+      <view class="achievement-title">百篇笔记</view>
+      <view class="achievement-desc">累计发布 100 条笔记</view>
+    </view>
+    <view class="card achievement-card {{stats.streakDays >= 7 ? 'active' : ''}}">
+      <view class="achievement-title">七日打卡</view>
+      <view class="achievement-desc">连续 7 天新增笔记</view>
+    </view>
+  </view>
+</scroll-view>

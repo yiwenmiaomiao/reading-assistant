@@ -1,0 +1,114 @@
+<app-nav title="打卡记录" can-back="{{true}}"></app-nav>
+<scroll-view class="checkins-page safe-bottom" scroll-y="true" style="height: {{calendarHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <view class="streak-card {{isCheckedToday ? 'streak-active' : ''}}">
+  <view class="streak-kicker">连续打卡</view>
+  <view class="streak-number-row">
+    <text class="streak-number">{{month.streakDays || 0}}</text>
+    <text class="streak-unit">天</text>
+  </view>
+  
+  <view class="streak-desc">
+    <text wx:if="{{!isCheckedToday}}">今日未打卡，快去记录新笔记吧！</text>
+    <text wx:else>每一天新增的笔记，都会在这里留下痕迹。</text>
+  </view>
+</view>
+
+  <view class="calendar-card">
+    <view class="calendar-head">
+      <view class="calendar-title-group">
+        <view class="month-switcher">
+          <button class="month-nav-btn" bindtap="goPrevMonth" aria-label="上一个月">
+            <text>‹</text>
+          </button>
+          <picker class="month-picker" mode="date" fields="month" value="{{monthPickerValue}}" end="{{todayMonthValue}}" bindchange="onMonthChange">
+            <view class="calendar-title">
+              <text>{{month.monthLabel}}</text>
+              <text class="month-picker-chevron">⌄</text>
+            </view>
+          </picker>
+          <button class="month-nav-btn {{canNextMonth ? '' : 'disabled'}}" bindtap="goNextMonth" aria-label="下一个月">
+            <text>›</text>
+          </button>
+        </view>
+        <view class="calendar-subtitle">点击日期查看当天新增笔记</view>
+      </view>
+      <view class="calendar-legend">
+        <view class="legend-dot"></view>
+        <text>已打卡</text>
+      </view>
+    </view>
+
+    <view class="weekday-row">
+      <text wx:for="{{month.weekdays}}" wx:key="*this" class="weekday">{{item}}</text>
+    </view>
+
+    <view class="calendar-grid">
+      <view
+        wx:for="{{month.cells}}"
+        wx:key="key"
+        class="{{item.className}}"
+        data-date="{{item.ymd}}"
+        data-checked="{{item.checked}}"
+        data-future="{{item.isFuture}}"
+        bindtap="onDayTap"
+      >
+        <block wx:if="{{!item.isBlank}}">
+          <text class="day-number">{{item.day}}</text>
+          <text wx:if="{{item.checked}}" class="day-count">{{item.countText}}</text>
+        </block>
+      </view>
+    </view>
+  </view>
+</scroll-view>
+
+<view class="detail-mask checkin-detail-mask" wx:if="{{activeIndex >= 0}}" bindtap="closeDetail">
+  <swiper
+    class="card-swiper"
+    current="{{activeIndex}}"
+    bindchange="onSwiperChange"
+    previous-margin="80rpx"
+    next-margin="80rpx"
+    circular="{{false}}"
+  >
+    <swiper-item wx:for="{{dayNotes}}" wx:key="_id" class="swiper-item">
+      <view class="deck-card {{activeIndex === index ? 'active-card' : ''}}" catchtap="stopTap">
+        <scroll-view class="detail-content" scroll-y="true" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+          <view class="detail-grip"></view>
+          <view class="note-meta">
+            <view class="avatar small-avatar">{{item.avatarText}}</view>
+            <text>{{item.user.nickname}}</text>
+            <text>{{item.createdLabel}}</text>
+          </view>
+
+          <view class="section-subtitle">摘抄</view>
+          <view class="detail-body">{{item.content}}</view>
+
+          <view wx:if="{{item.reflection}}" class="detail-reflection-section">
+            <view class="section-subtitle">阅读感悟</view>
+            <view class="detail-body-plain">{{item.reflection}}</view>
+          </view>
+
+          <view class="image-grid" wx:if="{{item.images.length}}">
+            <image wx:for="{{item.images}}" wx:for-item="img" wx:key="*this" class="note-image" mode="aspectFill" src="{{img}}" data-src="{{img}}" data-index="{{index}}" bindtap="previewImage" />
+          </view>
+
+          <view class="detail-title">--《{{item.bookTitle}}》--</view>
+
+          <view class="detail-tags" wx:if="{{item.tags.length}}">
+            <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+          </view>
+        </scroll-view>
+
+        <view class="detail-footer">
+          <view class="detail-favorite-wrap">
+            <button class="neon-capsule-btn {{item.isFavorite ? 'fav-active' : ''}}" data-index="{{index}}" bindtap="toggleFavorite">
+              <view class="fav-star-icon"></view>
+              <view wx:if="{{favoriteEffect && favoriteEffect.noteId === item._id}}" class="favorite-delta favorite-delta-{{favoriteEffect.type}}">{{favoriteEffect.text}}</view>
+            </button>
+            <view class="detail-favorite-count">{{item.favoriteCountText}}</view>
+          </view>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>

@@ -1,0 +1,102 @@
+<app-nav title="笔记" variant="transparent"></app-nav>
+<view class="notes-shell">
+  <view class="filter-bar">
+    <input class="input search-input" placeholder="搜索书名、正文、标签" value="{{keyword}}" bindinput="onKeywordInput" confirm-type="search" />
+    <view class="filter-actions">
+      <picker mode="date" value="{{startDate}}" bindchange="onStartDateChange">
+        <view class="filter-chip">{{startDate || '开始日期'}}</view>
+      </picker>
+      <picker mode="date" value="{{endDate}}" bindchange="onEndDateChange">
+        <view class="filter-chip">{{endDate || '结束日期'}}</view>
+      </picker>
+      <button class="filter-chip" bindtap="toggleUserPanel">用户 {{selectedUserIds.length ? selectedUserIds.length : '全部'}}</button>
+    </view>
+
+    <view class="user-panel" wx:if="{{showUserPanel}}">
+      <checkbox-group bindchange="onUserChange">
+        <label class="user-check" wx:for="{{users}}" wx:key="_openid">
+          <checkbox value="{{item._openid}}" checked="{{item.checked}}" color="#4A90D9" />
+          <text>{{item.nickname}}</text>
+        </label>
+      </checkbox-group>
+    </view>
+  </view>
+
+  <scroll-view class="notes-list" scroll-y="true" style="height: {{listHeight}}px;" bindscrolltolower="loadMore" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+    <block wx:if="{{notes.length}}">
+      <view class="card note-card" wx:for="{{notes}}" wx:key="_id" data-index="{{index}}" bindtap="openDetail">
+        <view class="note-title">{{item.bookTitle}}</view>
+        <view class="note-meta">
+          <view class="avatar small-avatar">{{item.avatarText}}</view>
+          <text>{{item.user.nickname}}</text>
+          <text>{{item.createdLabel}}</text>
+        </view>
+        <view class="note-content">{{item.excerpt}}</view>
+        <view class="note-tags-row">
+          <view class="note-tags" wx:if="{{item.tags.length}}">
+            <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+          </view>
+          <view class="favorite-count-inline">
+            <view class="favorite-outline-star"></view>
+            <text>{{item.favoriteCountText}}</text>
+          </view>
+        </view>
+      </view>
+      <view class="list-footer">{{hasMore ? '继续上滑加载' : '已经到底了'}}</view>
+    </block>
+    <view wx:else class="empty">没有找到匹配的笔记</view>
+  </scroll-view>
+</view>
+
+<view class="detail-mask" wx:if="{{activeIndex >= 0}}" bindtap="closeDetail">
+  <swiper 
+    class="card-swiper" 
+    current="{{activeIndex}}" 
+    bindchange="onSwiperChange" 
+    previous-margin="80rpx" 
+    next-margin="80rpx" 
+    circular="{{false}}" 
+  > <swiper-item wx:for="{{notes}}" wx:key="_id" class="swiper-item">
+      <view class="deck-card {{activeIndex === index ? 'active-card' : ''}}" catchtap="stopTap">
+        <scroll-view class="detail-content" scroll-y="true" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+          <view class="detail-grip"></view>
+          
+          <view class="note-meta">
+            <view class="avatar small-avatar">{{item.avatarText}}</view>
+            <text>{{item.user.nickname}}</text>
+            <text>{{item.createdLabel}}</text>
+          </view>
+          
+
+          <view class="section-subtitle">摘抄</view>
+          <view class="detail-body">{{item.content}}</view>
+          
+          <view wx:if="{{item.reflection}}" class="detail-reflection-section">
+            <view class="section-subtitle">阅读感悟</view>
+            <view class="detail-body-plain">{{item.reflection}}</view>
+          </view>
+
+          <view class="image-grid" wx:if="{{item.images.length}}">
+    <image wx:for="{{item.images}}" wx:for-item="img" wx:key="*this" class="note-image" mode="aspectFill" src="{{img}}" data-src="{{img}}" data-index="{{index}}" bindtap="previewImage" />
+  </view>
+
+  <view class="detail-title">--《{{item.bookTitle}}》--</view>
+  
+  <view class="detail-tags" wx:if="{{item.tags.length}}">
+    <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+  </view>
+</scroll-view>
+
+        <view class="detail-footer">
+  <view class="detail-favorite-wrap">
+    <button class="neon-capsule-btn {{item.isFavorite ? 'fav-active' : ''}}" data-index="{{index}}" bindtap="toggleFavorite">
+      <view class="fav-star-icon"></view>
+      <view wx:if="{{favoriteEffect && favoriteEffect.noteId === item._id}}" class="favorite-delta favorite-delta-{{favoriteEffect.type}}">{{favoriteEffect.text}}</view>
+    </button>
+    <view class="detail-favorite-count">{{item.favoriteCountText}}</view>
+  </view>
+</view>
+      </view>
+    </swiper-item>
+  </swiper>
+</view>

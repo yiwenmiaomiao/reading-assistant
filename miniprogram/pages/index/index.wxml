@@ -1,0 +1,39 @@
+<app-nav title="首页" variant="transparent"></app-nav>
+<scroll-view class="page home-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <view class="hero">
+    <view>
+      <view class="hero-kicker">本周阅读记录</view>
+      <view class="hero-title">把读过的书，变成留下来的想法</view>
+    </view>
+  </view>
+
+  <view class="stats-grid">
+    <view class="stat-card">
+      <text class="stat-label">今日新增</text>
+      <text class="stat-number">{{stats.todayCount}}</text>
+      <text class="stat-note">全平台笔记</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-label">本周新增</text>
+      <text class="stat-number">{{stats.weekCount}}</text>
+      <text class="stat-note">自然周统计</text>
+    </view>
+  </view>
+
+  <view class="section-title">本周阅读分排名</view>
+  <view class="card ranking-card" bindtap="goRanking">
+    <block wx:if="{{stats.topThree.length}}">
+      <view class="rank-row" wx:for="{{stats.topThree}}" wx:key="openid">
+        <view class="rank-index">{{item.rank}}</view>
+        <view class="avatar">{{item.avatarText}}</view>
+        <view class="rank-user">
+          <view class="rank-name">{{item.nickname}}</view>
+          <view class="rank-sub">{{item.bookCount}} 本书 · {{item.noteCount}} 条笔记</view>
+        </view>
+        <view class="rank-count">{{item.readingScoreDisplay}}</view>
+      </view>
+      <view class="ranking-more">查看 TOP 20</view>
+    </block>
+    <view wx:else class="empty compact-empty">本周还没有阅读分数据</view>
+  </view>
+</scroll-view>

@@ -1,0 +1,11 @@
+<view
+  class="draggable-fab {{dragging ? 'is-dragging' : ''}}"
+  style="left: {{left}}px; top: {{top}}px;"
+  aria-label="新增笔记"
+  catchtouchstart="onTouchStart"
+  catchtouchmove="onTouchMove"
+  catchtouchend="onTouchEnd"
+  catchtouchcancel="onTouchEnd"
+>
+  <text class="fab-text">+</text>
+</view>

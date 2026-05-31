@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "打卡记录",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "app-nav": "/components/app-nav/app-nav"
+  }
+}

@@ -1,0 +1,57 @@
+.draggable-fab {
+  position: fixed;
+  z-index: 10000;
+  width: 104rpx;
+  height: 104rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(30rpx);
+  -webkit-backdrop-filter: blur(30rpx);
+  box-shadow:
+    0 16rpx 40rpx rgba(200, 160, 255, 0.22),
+    inset 0 2rpx 4rpx rgba(255, 255, 255, 0.86);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.draggable-fab.is-dragging {
+  background: rgba(255, 255, 255, 0.28);
+  transform: scale(1.04);
+}
+
+.draggable-fab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 4rpx;
+  background-image: linear-gradient(90deg, #ffb4c8, #c8a0ff, #a0c8ff, #ffe0e9, #ffb4c8);
+  background-size: 200% 100%;
+  animation: fabBorderFlow 3s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.fab-text {
+  display: block;
+  margin-top: -6rpx;
+  color: #5e2b97;
+  font-size: 64rpx;
+  font-weight: 300;
+  line-height: 1;
+}
+
+@keyframes fabBorderFlow {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  100% {
+    background-position: -200% 0%;
+  }
+}

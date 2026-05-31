@@ -1,0 +1,60 @@
+<app-nav title="我的" variant="transparent"></app-nav>
+<scroll-view class="page profile-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <view class="profile-head">
+    <view class="avatar profile-avatar">{{user.avatarText}}</view>
+    <view class="profile-info">
+      <view class="profile-name">{{user.nickname}}</view>
+      <view class="profile-bio">{{user.bio}}</view>
+    </view>
+  </view>
+
+  <view class="stat-panel">
+    <view class="profile-stat">
+      <text class="profile-stat-number">{{stats.totalNotes}}</text>
+      <text class="profile-stat-label">总笔记</text>
+    </view>
+    <view class="profile-stat">
+      <text class="profile-stat-number">{{stats.totalBooks}}</text>
+      <text class="profile-stat-label">书籍数</text>
+    </view>
+    <view class="profile-stat">
+      <text class="profile-stat-number">{{stats.weekReadingScoreDisplay}}</text>
+      <text class="profile-stat-label">本周阅读分</text>
+    </view>
+    <view class="profile-stat">
+      <text class="profile-stat-number">{{stats.totalReadingScoreDisplay}}</text>
+      <text class="profile-stat-label">总阅读分</text>
+    </view>
+    <view class="profile-stat">
+      <text class="profile-stat-number">{{stats.weekRank || '-'}}</text>
+      <text class="profile-stat-label">周排名</text>
+    </view>
+    <view class="profile-stat">
+      <text class="profile-stat-number">{{stats.streakDays}}</text>
+      <text class="profile-stat-label">连续打卡</text>
+    </view>
+  </view>
+
+  <view class="menu-list">
+    <button class="menu-item" bindtap="goMyNotes">
+      <text>我的笔记</text>
+      <text class="menu-arrow">›</text>
+    </button>
+    <button class="menu-item" bindtap="goCheckins">
+      <text>打卡记录</text>
+      <text class="menu-arrow">›</text>
+    </button>
+    <button class="menu-item" bindtap="goAchievements">
+      <text>我的成就</text>
+      <text class="menu-arrow">›</text>
+    </button>
+    <button class="menu-item" bindtap="goReadingStats">
+      <text>阅读统计</text>
+      <text class="menu-arrow">›</text>
+    </button>
+    <button class="menu-item" bindtap="goFavorites">
+      <text>收藏笔记</text>
+      <text class="menu-arrow">›</text>
+    </button>
+  </view>
+</scroll-view>

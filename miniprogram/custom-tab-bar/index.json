@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "draggable-fab": "/components/draggable-fab/draggable-fab"
+  }
+}

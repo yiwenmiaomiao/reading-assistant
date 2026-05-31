@@ -1,0 +1,28 @@
+<app-nav title="我的笔记" can-back="{{true}}"></app-nav>
+
+<view class="my-notes-shell">
+  <view class="my-search">
+    <input class="input" placeholder="搜索我的笔记" value="{{keyword}}" bindinput="onKeywordInput" confirm-type="search" />
+  </view>
+
+  <scroll-view class="my-list" scroll-y="true" style="height: {{listHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+    <block wx:if="{{notes.length}}">
+      <view class="card my-note-card" wx:for="{{notes}}" wx:key="_id">
+        <view class="note-title">{{item.bookTitle}}</view>
+        <view class="note-meta">
+          <text>{{item.createdLabel}}</text>
+        </view>
+        <view class="note-content">{{item.excerpt}}</view>
+        <view class="note-tags" wx:if="{{item.tags.length}}">
+          <text class="tag" wx:for="{{item.tags}}" wx:for-item="tag" wx:key="_this">{{tag}}</text>
+        </view>
+        <view class="my-actions">
+          <button class="small-btn btn-edit" data-id="{{item._id}}" bindtap="editNote">编辑</button>
+          <button class="small-btn btn-delete" data-id="{{item._id}}" bindtap="deleteNote">删除</button>
+        </view>
+      </view>
+    </block>
+    
+    <view wx:else class="empty">暂无相关笔记</view>
+  </scroll-view>
+</view>

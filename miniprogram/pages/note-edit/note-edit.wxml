@@ -1,0 +1,48 @@
+<app-nav title="{{id ? '编辑笔记' : '写笔记'}}" can-back="{{true}}"></app-nav>
+<scroll-view class="page edit-page" scroll-y="true" style="height: calc(100vh - {{navHeight}}px);" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+  <view class="field">
+    <view class="field-label">书名</view>
+    <input class="input" placeholder="输入书名" placeholder-class="edit-placeholder" value="{{bookTitle}}" bindinput="onBookInput" maxlength="80" />
+  </view>
+
+  <view class="field">
+    <view class="field-label">笔记正文</view>
+    <textarea class="textarea  main-textarea" placeholder="记录摘录、思考或阅读时的灵感" placeholder-style="font-weight: 300;" value="{{content}}" bindinput="onContentInput" maxlength="5000" show-confirm-bar="{{false}}" />
+    <view class="counter">{{content.length}} / 5000</view>
+  </view>
+
+  <view class="field">
+    <view class="field-label">阅读感悟</view>
+    <textarea class="textarea reflection-textarea" placeholder="写下这条笔记对你的启发" placeholder-style="font-weight: 300;" value="{{reflection}}" bindinput="onReflectionInput" maxlength="1000" show-confirm-bar="{{false}}" />
+  </view>
+
+  <view class="field">
+    <view class="field-label">标签</view>
+    <view class="tag-list">
+      <button wx:for="{{tags}}" wx:key="_id" class="{{item.selected ? 'tag tag-selected' : 'tag'}}" data-name="{{item.name}}" bindtap="toggleTag">{{item.name}}</button>
+    </view>
+    <view class="tag-create">
+      <input class="input tag-input" placeholder="自定义标签" placeholder-class="edit-placeholder" value="{{customTag}}" bindinput="onCustomTagInput" confirm-type="done" bindconfirm="addCustomTag" />
+      <button class="gradient-btn add-tag-btn" bindtap="addCustomTag">添加</button>
+    </view>
+  </view>
+
+  <view class="field">
+    <view class="field-label">图片</view>
+    <view class="image-grid">
+      <view class="image-wrap" wx:for="{{images}}" wx:key="*this">
+        <image class="edit-image" src="{{item}}" mode="aspectFill" data-src="{{item}}" bindtap="previewImage" />
+        <button class="remove-image" data-index="{{index}}" bindtap="removeImage">×</button>
+      </view>
+      <button wx:if="{{images.length < 9}}" class="add-image" bindtap="chooseImages">+</button>
+    </view>
+    <view class="image-tip">最多 9 张，单张不超过 10MB</view>
+  </view>
+
+  <view class="footer-actions">
+    <button wx:if="{{id}}" class="gradient-btn delete-btn" bindtap="deleteNote">删除笔记</button>
+    <button class="gradient-btn submit-btn" bindtap="submit">发布笔记</button>
+  </view>
+  
+  <view class="safe-area-spacer"></view>
+</scroll-view>
