@@ -8,7 +8,10 @@
   <block wx:if="{{rankings.length}}">
     <view class="card rank-detail-row" wx:for="{{rankings}}" wx:key="openid">
       <view class="rank-number">{{item.rank}}</view>
-      <view class="avatar">{{item.avatarText}}</view>
+      <view class="avatar">
+        <image wx:if="{{item.avatar}}" class="avatar-image" src="{{item.avatar}}" mode="aspectFill" />
+        <text wx:else>{{item.avatarText}}</text>
+      </view>
       <view class="rank-person">
         <view class="rank-name">{{item.nickname}}</view>
         <view class="rank-sub">{{item.bookCount}} 本书 · {{item.noteCount}} 条笔记</view>

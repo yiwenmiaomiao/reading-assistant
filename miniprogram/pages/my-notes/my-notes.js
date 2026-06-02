@@ -32,9 +32,9 @@ Page({
   },
 
   // 核心数据查询与挂载（修复：重新补回此核心方法）
-  loadNotes() {
+  async loadNotes() {
     this.setData({
-      notes: store.searchMyNotes(this.data.keyword)
+      notes: await store.searchMyNotesAsync(this.data.keyword)
     });
   },
 
@@ -87,9 +87,9 @@ Page({
     wx.showModal({
       title: '删除笔记',
       content: '删除后会同步刷新首页和个人统计，确定删除吗？',
-      success: (res) => {
+      success: async (res) => {
         if (res.confirm) {
-          store.deleteNote(id);
+          await store.deleteNoteAsync(id);
           this.loadNotes();
         }
       }

@@ -1,5 +1,7 @@
 const store = require('./utils/store');
 
+const PROFILE_COMPLETED_KEY = 'wechat_profile_completed';
+
 App({
   onLaunch() {
     if (!wx.cloud) return;
@@ -13,6 +15,7 @@ App({
     if (cachedOpenid) {
       this.globalData.currentUserId = cachedOpenid;
       store.migrateNickname();
+      this._migrateLocalDataToCloud().then(() => this._notifyCurrentPage());
     } else {
       this._silentLogin();
     }
@@ -29,20 +32,40 @@ App({
             wx.setStorageSync('openid', openid);
             this.globalData.currentUserId = openid;
             store.migrateNickname(); 
-
-            // 通知所有页面重新加载
-            const pages = getCurrentPages();
-            if (pages.length > 0) {
-              const currentPage = pages[pages.length - 1];
-              if (currentPage.onShow) currentPage.onShow();
-            }
+            this._migrateLocalDataToCloud().then(() => this._notifyCurrentPage());
           },
         });
       }
     });
   },
 
+  _migrateLocalDataToCloud() {
+    return store.migrateLocalDataToCloudAsync().then((res) => {
+      if (res && res.migrated) {
+        console.log('local data migrated to cloud:', res);
+      }
+      return res;
+    });
+  },
+
+  _notifyCurrentPage() {
+    const pages = getCurrentPages();
+    if (pages.length > 0) {
+      const currentPage = pages[pages.length - 1];
+      if (currentPage.onShow) currentPage.onShow();
+    }
+  },
+
+  hasCompletedProfile() {
+    return !!wx.getStorageSync(PROFILE_COMPLETED_KEY);
+  },
+
+  markProfileCompleted() {
+    wx.setStorageSync(PROFILE_COMPLETED_KEY, true);
+  },
+
   globalData: {
-    currentUserId: ''
+    currentUserId: '',
+    profileCompletedKey: PROFILE_COMPLETED_KEY
   }
 });

@@ -9,9 +9,17 @@ async function enrichNotes(notes, openid) {
   if (!notes.length) return [];
 
   const noteIds = notes.map((note) => note._id);
+  const authorIds = [...new Set(notes.map((note) => note._openid).filter(Boolean))];
   const favorites = await db.collection('favorites').where({
     noteId: _.in(noteIds)
   }).limit(1000).get();
+  const users = authorIds.length
+    ? await db.collection('users').where({ _openid: _.in(authorIds) }).limit(200).get()
+    : { data: [] };
+  const userMap = users.data.reduce((map, user) => {
+    map[user._openid] = user;
+    return map;
+  }, {});
   const favoriteCounts = favorites.data.reduce((map, favorite) => {
     map[favorite.noteId] = (map[favorite.noteId] || 0) + 1;
     return map;
@@ -21,9 +29,12 @@ async function enrichNotes(notes, openid) {
     .map((favorite) => favorite.noteId);
 
   return notes.map((note) => {
-    const favoriteCount = favoriteCounts[note._id] || 0;
+    const favoriteCount = typeof note.favoriteCount === 'number'
+      ? note.favoriteCount
+      : favoriteCounts[note._id] || 0;
     return {
       ...note,
+      user: userMap[note._openid] || {},
       favoriteCount,
       favoriteCountText: `${favoriteCount}`,
       isFavorite: myFavoriteIds.includes(note._id)
@@ -37,7 +48,8 @@ exports.main = async (event) => {
   const pageSize = Number(event.pageSize || 20);
   const keyword = (event.keyword || '').trim();
   const where = {
-    isDeleted: _.neq(true)
+    isDeleted: _.neq(true),
+    visibility: _.neq('private')
   };
 
   if (event.startDate || event.endDate) {
@@ -66,17 +78,23 @@ exports.main = async (event) => {
     ]));
   }
 
+  const query = filters.length > 1 ? _.and(filters) : where;
   const result = await db.collection('notes')
-    .where(filters.length > 1 ? _.and(filters) : where)
+    .where(query)
     .orderBy('createdAt', 'desc')
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .get();
+  const totalResult = await db.collection('notes')
+    .where(query)
+    .count();
 
   const list = await enrichNotes(result.data, OPENID);
 
   return {
     list,
+    total: totalResult.total,
+    hasMore: page * pageSize < totalResult.total,
     page,
     pageSize
   };

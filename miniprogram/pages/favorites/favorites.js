@@ -26,14 +26,14 @@ Page({
     });
   },
 
-  loadFavorites() {
+  async loadFavorites() {
     this.setData({
-      notes: store.getFavorites()
+      notes: await store.getFavoritesAsync()
     });
   },
 
-  unfavorite(event) {
-    store.toggleFavorite(event.currentTarget.dataset.id);
+  async unfavorite(event) {
+    await store.toggleFavoriteAsync(event.currentTarget.dataset.id);
     this.loadFavorites();
   },
 

@@ -68,10 +68,10 @@ Page({
     this.setData({ calendarHeight });
   },
 
-  refresh() {
+  async refresh() {
     const viewYear = this.data.viewYear || new Date().getFullYear();
     const viewMonth = this.data.viewMonth || new Date().getMonth() + 1;
-    const month = store.getCheckinMonth(viewYear, viewMonth);
+    const month = await store.getCheckinMonthAsync(viewYear, viewMonth);
     const currentMonthTime = new Date(viewYear, viewMonth - 1, 1).getTime();
     const today = new Date();
     const todayMonthTime = new Date(today.getFullYear(), today.getMonth(), 1).getTime();
@@ -141,8 +141,9 @@ Page({
     });
   },
 
-  loadDayNotes(date) {
-    const dayNotes = store.getMyNotesByDate(date).map((item) => ({
+  async loadDayNotes(date) {
+    const notes = await store.getMyNotesByDateAsync(date);
+    const dayNotes = notes.map((item) => ({
       ...item,
       favoriteCount: typeof item.favoriteCount === 'number' ? item.favoriteCount : 0,
       favoriteCountText: `${typeof item.favoriteCount === 'number' ? item.favoriteCount : 0}`,
@@ -174,12 +175,13 @@ Page({
     });
   },
 
-  toggleFavorite(event) {
+  async toggleFavorite(event) {
     const index = Number(event.currentTarget.dataset.index);
     const note = this.data.dayNotes[index];
     if (!note) return;
 
-    const next = store.toggleFavorite(note._id);
+    const result = await store.toggleFavoriteAsync(note._id);
+    const next = result.isFavorite;
     const delta = next ? 1 : -1;
     const dayNotes = this.data.dayNotes.map((item, i) => {
       if (i !== index) return item;
@@ -187,8 +189,8 @@ Page({
       return {
         ...item,
         isFavorite: next,
-        favoriteCount,
-        favoriteCountText: `${favoriteCount}`
+        favoriteCount: typeof result.favoriteCount === 'number' ? result.favoriteCount : favoriteCount,
+        favoriteCountText: `${typeof result.favoriteCount === 'number' ? result.favoriteCount : favoriteCount}`
       };
     });
 

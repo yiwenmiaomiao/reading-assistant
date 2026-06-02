@@ -12,11 +12,11 @@ Page({
     this.updatePageHeight();
   },
 
-  onShow() {
+  async onShow() {
     enableShareMenu();
     this.updatePageHeight();
     this.setData({
-      stats: store.getMyStats()
+      stats: await store.getMyStatsAsync()
     });
   },
 

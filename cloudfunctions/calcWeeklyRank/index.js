@@ -31,6 +31,7 @@ exports.main = async () => {
 
   const notes = await db.collection('notes').where({
     isDeleted: _.neq(true),
+    visibility: _.neq('private'),
     createdAt: _.gte(weekStart).and(_.lte(weekEnd))
   }).limit(1000).get();
 

@@ -62,19 +62,25 @@ Page({
     });
   },
 
-  loadUsers() {
+  async loadUsers() {
     const selected = this.data.selectedUserIds;
+    const users = await store.getUsersAsync();
+    const userIds = users.map((user) => user._openid);
+    const validSelected = selected.filter((id) => userIds.includes(id));
+    if (validSelected.length !== selected.length) {
+      this.setData({ selectedUserIds: validSelected });
+    }
     this.setData({
-      users: store.getUsers().map((user) => ({
+      users: users.map((user) => ({
         ...user,
-        checked: selected.includes(user._openid)
+        checked: validSelected.includes(user._openid)
       }))
     });
   },
 
-  loadNotes(reset) {
+  async loadNotes(reset) {
     const page = reset ? 1 : this.data.page;
-    const result = store.searchAllNotes({
+    const result = await store.searchAllNotesAsync({
       keyword: this.data.keyword,
       startDate: this.data.startDate,
       endDate: this.data.endDate,
@@ -109,13 +115,55 @@ Page({
   },
 
   onStartDateChange(event) {
-    this.setData({ startDate: event.detail.value });
+    const selectedDate = event.detail.value;
+    
+    // 校验：开始日期不能晚于结束日期
+    if (this.data.endDate && selectedDate > this.data.endDate) {
+      wx.showToast({ title: '开始日期不能晚于结束日期', icon: 'none' });
+      return;
+    }
+
+    this.setData({ startDate: selectedDate });
     this.loadNotes(true);
   },
 
   onEndDateChange(event) {
-    this.setData({ endDate: event.detail.value });
+    const selectedDate = event.detail.value;
+
+    // 校验：结束日期不能早于开始日期
+    if (this.data.startDate && selectedDate < this.data.startDate) {
+      wx.showToast({ title: '结束日期不能早于开始日期', icon: 'none' });
+      return;
+    }
+
+    this.setData({ endDate: selectedDate });
     this.loadNotes(true);
+  },
+
+  clearStartDate() {
+    this.setData({ startDate: '' });
+    this.loadNotes(true);
+  },
+
+  clearEndDate() {
+    this.setData({ endDate: '' });
+    this.loadNotes(true);
+  },
+
+  resetFilters() {
+    this.setData({
+      keyword: '',
+      startDate: '',
+      endDate: '',
+      selectedUserIds: [],
+      // 重置用户列表的勾选状态
+      users: this.data.users.map((user) => ({ ...user, checked: false })),
+      showUserPanel: false
+    }, () => {
+      // 状态清理完毕后，重新加载列表并重算高度
+      this.loadNotes(true);
+      this.updateListHeight();
+    });
   },
 
   toggleUserPanel() {
@@ -171,18 +219,19 @@ Page({
     });
   },
 
-  toggleFavorite(event) {
+  async toggleFavorite(event) {
     const index = Number(event.currentTarget.dataset.index);
     const note = this.data.notes[index];
     if (!note) return;
-    const next = store.toggleFavorite(note._id);
+    const result = await store.toggleFavoriteAsync(note._id);
+    const next = result.isFavorite;
     const delta = next ? 1 : -1;
     const notes = this.data.notes.map((item, i) => i === index
       ? {
           ...item,
           isFavorite: next,
-          favoriteCount: Math.max(0, (item.favoriteCount || 0) + delta),
-          favoriteCountText: `${Math.max(0, (item.favoriteCount || 0) + delta)}`
+          favoriteCount: typeof result.favoriteCount === 'number' ? result.favoriteCount : Math.max(0, (item.favoriteCount || 0) + delta),
+          favoriteCountText: `${typeof result.favoriteCount === 'number' ? result.favoriteCount : Math.max(0, (item.favoriteCount || 0) + delta)}`
         }
       : item);
 

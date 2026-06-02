@@ -4,7 +4,10 @@
     <view class="card" wx:for="{{notes}}" wx:key="_id">
       <view class="note-title">{{item.bookTitle}}</view>
       <view class="note-meta">
-        <view class="avatar small-avatar">{{item.avatarText}}</view>
+        <view class="avatar small-avatar">
+          <image wx:if="{{item.user.avatar}}" class="avatar-image" src="{{item.user.avatar}}" mode="aspectFill" />
+          <text wx:else>{{item.avatarText}}</text>
+        </view>
         <text>{{item.user.nickname}}</text>
         <text>{{item.createdLabel}}</text>
       </view>

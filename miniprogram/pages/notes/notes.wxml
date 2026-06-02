@@ -3,13 +3,23 @@
   <view class="filter-bar">
     <input class="input search-input" placeholder="搜索书名、正文、标签" value="{{keyword}}" bindinput="onKeywordInput" confirm-type="search" />
     <view class="filter-actions">
-      <picker mode="date" value="{{startDate}}" bindchange="onStartDateChange">
-        <view class="filter-chip">{{startDate || '开始日期'}}</view>
-      </picker>
-      <picker mode="date" value="{{endDate}}" bindchange="onEndDateChange">
-        <view class="filter-chip">{{endDate || '结束日期'}}</view>
-      </picker>
+      <view class="filter-chip">
+        <picker mode="date" value="{{startDate}}" end="{{endDate}}" bindchange="onStartDateChange" class="chip-picker">
+          <view>{{startDate || '开始日期'}}</view>
+        </picker>
+        <text wx:if="{{startDate}}" class="chip-clear" catchtap="clearStartDate">×</text>
+      </view>
+
+      <view class="filter-chip">
+        <picker mode="date" value="{{endDate}}" start="{{startDate}}" bindchange="onEndDateChange" class="chip-picker">
+          <view>{{endDate || '结束日期'}}</view>
+        </picker>
+        <text wx:if="{{endDate}}" class="chip-clear" catchtap="clearEndDate">×</text>
+      </view>
+
       <button class="filter-chip" bindtap="toggleUserPanel">用户 {{selectedUserIds.length ? selectedUserIds.length : '全部'}}</button>
+      
+      <button class="filter-chip reset-chip" bindtap="resetFilters">重置</button>
     </view>
 
     <view class="user-panel" wx:if="{{showUserPanel}}">
@@ -27,7 +37,10 @@
       <view class="card note-card" wx:for="{{notes}}" wx:key="_id" data-index="{{index}}" bindtap="openDetail">
         <view class="note-title">{{item.bookTitle}}</view>
         <view class="note-meta">
-          <view class="avatar small-avatar">{{item.avatarText}}</view>
+          <view class="avatar small-avatar">
+            <image wx:if="{{item.user.avatar}}" class="avatar-image" src="{{item.user.avatar}}" mode="aspectFill" />
+            <text wx:else>{{item.avatarText}}</text>
+          </view>
           <text>{{item.user.nickname}}</text>
           <text>{{item.createdLabel}}</text>
         </view>
@@ -62,7 +75,10 @@
           <view class="detail-grip"></view>
           
           <view class="note-meta">
-            <view class="avatar small-avatar">{{item.avatarText}}</view>
+            <view class="avatar small-avatar">
+              <image wx:if="{{item.user.avatar}}" class="avatar-image" src="{{item.user.avatar}}" mode="aspectFill" />
+              <text wx:else>{{item.avatarText}}</text>
+            </view>
             <text>{{item.user.nickname}}</text>
             <text>{{item.createdLabel}}</text>
           </view>
@@ -87,12 +103,14 @@
   </view>
 </scroll-view>
 
-        <view class="detail-footer">
+<view class="detail-footer">
   <view class="detail-favorite-wrap">
     <button class="neon-capsule-btn {{item.isFavorite ? 'fav-active' : ''}}" data-index="{{index}}" bindtap="toggleFavorite">
       <view class="fav-star-icon"></view>
-      <view wx:if="{{favoriteEffect && favoriteEffect.noteId === item._id}}" class="favorite-delta favorite-delta-{{favoriteEffect.type}}">{{favoriteEffect.text}}</view>
     </button>
+    
+    <view wx:if="{{favoriteEffect && favoriteEffect.noteId === item._id}}" class="favorite-delta favorite-delta-{{favoriteEffect.type}}">{{favoriteEffect.text}}</view>
+    
     <view class="detail-favorite-count">{{item.favoriteCountText}}</view>
   </view>
 </view>

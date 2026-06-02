@@ -30,7 +30,7 @@ function formatScore(score) {
 }
 
 exports.main = async (event) => {
-  const openid = event.openid || cloud.getWXContext().OPENID;
+  const openid = cloud.getWXContext().OPENID;
   const notes = await db.collection('notes').where({
     _openid: openid,
     isDeleted: _.neq(true)
@@ -72,6 +72,18 @@ exports.main = async (event) => {
   const users = await db.collection('users').where({ _openid: openid }).get();
   if (users.data.length) {
     await db.collection('users').doc(users.data[0]._id).update({ data: { stats } });
+  } else {
+    await db.collection('users').add({
+      data: {
+        _openid: openid,
+        nickname: '',
+        avatar: '',
+        bio: '',
+        stats,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    });
   }
 
   return { stats };

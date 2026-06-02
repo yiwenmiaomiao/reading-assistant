@@ -1,7 +1,62 @@
 const dateUtil = require('./date');
 
 const STORAGE_KEY = 'reading_notes_mvp_state_v1';
+const CLOUD_MIGRATED_KEY = 'reading_notes_cloud_migrated_v1';
 const PAGE_SIZE = 20;
+
+function hasCloud() {
+  return !!(typeof wx !== 'undefined' && wx.cloud && wx.cloud.callFunction);
+}
+
+function callCloud(name, data = {}) {
+  if (!hasCloud()) {
+    return Promise.reject(new Error('cloud unavailable'));
+  }
+
+  return new Promise((resolve, reject) => {
+    wx.cloud.callFunction({
+      name,
+      data,
+      success: (res) => resolve(res.result || {}),
+      fail: reject
+    });
+  });
+}
+
+function uploadCloudFile(filePath, index, directory = 'note-images') {
+  if (!filePath || /^(cloud|https?):\/\//.test(filePath) || !wx.cloud || !wx.cloud.uploadFile) {
+    return Promise.resolve(filePath);
+  }
+
+  const extMatch = `${filePath}`.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  const ext = extMatch ? extMatch[1] : 'jpg';
+  const cloudPath = `${directory}/${getOpenid()}/${Date.now()}_${index}.${ext}`;
+
+  return new Promise((resolve, reject) => {
+    wx.cloud.uploadFile({
+      cloudPath,
+      filePath,
+      success: (res) => resolve(res.fileID),
+      fail: reject
+    });
+  });
+}
+
+function uploadNoteImages(images = []) {
+  return Promise.all((images || []).map((image, index) => uploadCloudFile(image, index)));
+}
+
+function uploadAvatar(avatar) {
+  return uploadCloudFile(avatar, 'avatar', 'avatars');
+}
+
+function withLocalFallback(promise, fallback, label) {
+  return promise.catch((error) => {
+    console.warn(`[store] cloud ${label || 'request'} fallback`, error);
+    return fallback();
+  });
+}
+
 function getOpenid() {
   const app = getApp();
   return (app && app.globalData && app.globalData.currentUserId) || 'user_me';
@@ -30,11 +85,12 @@ function dayIso(offset) {
 }
 
 function createSeedState() {
+  const openid = getOpenid();
   return {
     users: [
       {
-        _openid: getOpenid(),
-        nickname: '读者' + getOpenid().slice(-6),
+        _openid: openid,
+        nickname: defaultNickname(openid),
         avatar: '',
         bio: '把读过的书变成可复用的思考。',
         createdAt: dayIso(-18)
@@ -55,14 +111,14 @@ function createSeedState() {
       }
     ],
     tags: [
-      { _id: 'tag_1', name: '认知', createdBy: getOpenid(), createdAt: dayIso(-8) },
+      { _id: 'tag_1', name: '认知', createdBy: openid, createdAt: dayIso(-8) },
       { _id: 'tag_2', name: '方法论', createdBy: 'user_lin', createdAt: dayIso(-7) },
       { _id: 'tag_3', name: '小说', createdBy: 'user_qing', createdAt: dayIso(-6) }
     ],
     notes: [
       {
         _id: 'note_1',
-        _openid: getOpenid(),
+        _openid: openid,
         bookTitle: '如何阅读一本书',
         content: '主动阅读不是把字看完，而是在阅读前提出问题，在阅读中寻找结构，在阅读后用自己的语言复述。',
         reflection: '以后每读一本非虚构书，都先写下三个问题，再开始做笔记。',
@@ -98,7 +154,7 @@ function createSeedState() {
       },
       {
         _id: 'note_4',
-        _openid: getOpenid(),
+        _openid: openid,
         bookTitle: '深度工作',
         content: '高质量产出来自长时间无干扰的专注。真正稀缺的不是信息，而是能把信息转化为能力的注意力。',
         reflection: '把早晨第一个小时留给最难的任务。',
@@ -112,7 +168,7 @@ function createSeedState() {
     favorites: [
       {
         _id: 'fav_1',
-        _openid: getOpenid(),
+        _openid: openid,
         noteId: 'note_2',
         createdAt: dayIso(-1)
       }
@@ -136,6 +192,18 @@ function ensureSeed() {
   }
 }
 
+function shouldMigrateLocalToCloud() {
+  const openid = getOpenid();
+  if (!openid || openid === 'user_me') return false;
+  if (wx.getStorageSync(`${CLOUD_MIGRATED_KEY}_${openid}`)) return false;
+  const current = load();
+  return !!(current && Array.isArray(current.notes) && current.notes.length);
+}
+
+function defaultNickname(openid = getOpenid()) {
+  return openid === 'user_me' ? '读者' : `读者${openid.slice(-6)}`;
+}
+
 function migrateNickname() {
   if (wx.getStorageSync('nickname_migrated')) return;
 
@@ -152,8 +220,8 @@ function migrateNickname() {
     if (user._openid === 'user_me') {
       user._openid = openid;
       if (user.nickname === '我' || user.nickname === '读者ser_me') {
-        user.nickname = '读者' + openid.slice(-6);
-    }
+        user.nickname = defaultNickname(openid);
+      }
     
       changed = true;
     }
@@ -194,7 +262,21 @@ function state() {
 }
 
 function currentUser() {
-  return state().users.find((user) => user._openid === getOpenid());
+  const baseState = state();
+  const openid = getOpenid();
+  let user = baseState.users.find((item) => item._openid === openid);
+  if (!user) {
+    user = {
+      _openid: openid,
+      nickname: defaultNickname(openid),
+      avatar: '',
+      bio: '把读过的书变成可复用的思考。',
+      createdAt: nowIso()
+    };
+    baseState.users.push(user);
+    save(baseState);
+  }
+  return user;
 }
 
 function activeNotes(baseState) {
@@ -214,6 +296,80 @@ function getUserMap(baseState) {
 
 function avatarText(user) {
   return (user && user.nickname ? user.nickname : '读').slice(0, 1);
+}
+
+function toDateValue(value) {
+  if (!value) return nowIso();
+  if (value instanceof Date) return value;
+  if (value.$date) return value.$date;
+  return value;
+}
+
+function formatUser(user = {}) {
+  const nickname = user.nickname || defaultNickname(user._openid || getOpenid());
+  return {
+    ...user,
+    nickname,
+    avatar: user.avatar || '',
+    avatarText: avatarText({ nickname })
+  };
+}
+
+function formatNote(note = {}) {
+  const tags = Array.isArray(note.tags) ? note.tags : [];
+  const images = Array.isArray(note.images) ? note.images : [];
+  const user = formatUser(note.user || {});
+  const content = `${note.content || ''}`;
+  const createdAt = toDateValue(note.createdAt);
+  const favoriteCount = typeof note.favoriteCount === 'number' ? note.favoriteCount : 0;
+
+  return {
+    ...note,
+    bookTitle: note.bookTitle || note.bookTitleSnapshot || '',
+    content,
+    reflection: `${note.reflection || ''}`,
+    tags,
+    images,
+    user,
+    avatarText: avatarText(user),
+    createdAt,
+    createdLabel: dateUtil.formatDateTime(createdAt),
+    dateYmd: note.checkinDate || dateUtil.formatDate(createdAt),
+    excerpt: content.length > 80 ? `${content.slice(0, 80)}...` : content,
+    tagText: tags.join(' / '),
+    isFavorite: !!note.isFavorite,
+    favoriteCount,
+    favoriteCountText: `${favoriteCount}`
+  };
+}
+
+function updateCurrentUserProfile(profile = {}) {
+  const baseState = state();
+  const openid = getOpenid();
+  const nickname = `${profile.nickname || profile.nickName || ''}`.trim();
+  const avatar = `${profile.avatar || profile.avatarUrl || ''}`.trim();
+  let user = baseState.users.find((item) => item._openid === openid);
+
+  if (!user) {
+    user = {
+      _openid: openid,
+      nickname: nickname || defaultNickname(openid),
+      avatar,
+      bio: '把读过的书变成可复用的思考。',
+      createdAt: nowIso()
+    };
+    baseState.users.push(user);
+  } else {
+    if (nickname) user.nickname = nickname;
+    if (avatar) user.avatar = avatar;
+    user.updatedAt = nowIso();
+  }
+
+  save(baseState);
+  return {
+    ...user,
+    avatarText: avatarText(user)
+  };
 }
 
 function getFavoriteCount(noteId, baseState) {
@@ -243,6 +399,8 @@ function enrich(note, baseState) {
   const favoriteCount = typeof note.favoriteCount === 'number'
     ? note.favoriteCount
     : getFavoriteCount(note._id, baseState);
+  const tags = Array.isArray(note.tags) ? note.tags : [];
+  const content = `${note.content || ''}`;
 
   return {
     ...note,
@@ -250,8 +408,8 @@ function enrich(note, baseState) {
     avatarText: avatarText(user),
     createdLabel: dateUtil.formatDateTime(note.createdAt),
     dateYmd: dateUtil.formatDate(note.createdAt),
-    excerpt: note.content.length > 80 ? `${note.content.slice(0, 80)}...` : note.content,
-    tagText: note.tags.join(' / '),
+    excerpt: content.length > 80 ? `${content.slice(0, 80)}...` : content,
+    tagText: tags.join(' / '),
     isFavorite: favorite,
     favoriteCount,
     favoriteCountText: `${favoriteCount}`
@@ -626,24 +784,318 @@ function getReadingStats() {
   };
 }
 
+function syncCurrentUserToLocal(user) {
+  if (!user) return currentUser();
+  const baseState = state();
+  const openid = user._openid || getOpenid();
+  const index = baseState.users.findIndex((item) => item._openid === openid);
+  const next = {
+    ...(index >= 0 ? baseState.users[index] : {}),
+    ...user,
+    _openid: openid
+  };
+
+  if (index >= 0) {
+    baseState.users[index] = next;
+  } else {
+    baseState.users.push(next);
+  }
+
+  save(baseState);
+  return formatUser(next);
+}
+
+function updateLocalNote(note) {
+  if (!note || !note._id) return;
+  const baseState = state();
+  const index = baseState.notes.findIndex((item) => item._id === note._id);
+  const normalized = {
+    ...note,
+    tags: Array.isArray(note.tags) ? note.tags : [],
+    images: Array.isArray(note.images) ? note.images : [],
+    createdAt: toDateValue(note.createdAt),
+    updatedAt: toDateValue(note.updatedAt)
+  };
+
+  if (index >= 0) {
+    baseState.notes[index] = {
+      ...baseState.notes[index],
+      ...normalized
+    };
+  } else {
+    baseState.notes.push(normalized);
+  }
+
+  save(baseState);
+}
+
+async function currentUserAsync() {
+  return withLocalFallback(
+    callCloud('getCurrentUser').then((res) => syncCurrentUserToLocal(res.user)),
+    () => formatUser(currentUser()),
+    'getCurrentUser'
+  );
+}
+
+async function migrateLocalDataToCloudAsync() {
+  if (!shouldMigrateLocalToCloud()) {
+    return { migrated: false, skipped: true };
+  }
+
+  const openid = getOpenid();
+  const current = load();
+  return withLocalFallback(
+    callCloud('importLocalData', {
+      users: current.users || [],
+      notes: current.notes || [],
+      favorites: current.favorites || []
+    }).then((res) => {
+      wx.setStorageSync(`${CLOUD_MIGRATED_KEY}_${openid}`, true);
+      return {
+        ...res,
+        migrated: true
+      };
+    }),
+    () => ({ migrated: false, skipped: true }),
+    'importLocalData'
+  );
+}
+
+async function updateCurrentUserProfileAsync(profile = {}) {
+  const avatar = profile.avatar || profile.avatarUrl || '';
+
+  return withLocalFallback(
+    (async () => {
+      const nextProfile = {
+        ...profile,
+        avatar: avatar ? await uploadAvatar(avatar) : avatar
+      };
+      const res = await callCloud('upsertUserProfile', nextProfile);
+      return syncCurrentUserToLocal(res.user);
+    })(),
+    () => updateCurrentUserProfile(profile),
+    'upsertUserProfile'
+  );
+}
+
+async function getUsersAsync() {
+  return withLocalFallback(
+    callCloud('getUsers').then((res) => (res.list || []).map(formatUser)),
+    () => getUsers(),
+    'getUsers'
+  );
+}
+
+async function searchAllNotesAsync(options = {}) {
+  return withLocalFallback(
+    callCloud('searchAllNotes', {
+      ...options,
+      pageSize: options.pageSize || PAGE_SIZE
+    }).then((res) => ({
+      list: (res.list || []).map(formatNote),
+      total: res.total || 0,
+      hasMore: !!res.hasMore,
+      page: res.page || options.page || 1,
+      pageSize: res.pageSize || options.pageSize || PAGE_SIZE
+    })),
+    () => searchAllNotes(options),
+    'searchAllNotes'
+  );
+}
+
+async function searchMyNotesAsync(keyword = '') {
+  return withLocalFallback(
+    callCloud('searchMyNotes', { keyword }).then((res) => (res.list || []).map(formatNote)),
+    () => searchMyNotes(keyword),
+    'searchMyNotes'
+  );
+}
+
+async function getMyNotesByDateAsync(ymd) {
+  return withLocalFallback(
+    callCloud('searchMyNotes', { date: ymd }).then((res) => (res.list || []).map(formatNote)),
+    () => getMyNotesByDate(ymd),
+    'getMyNotesByDate'
+  );
+}
+
+async function getNoteAsync(noteId) {
+  return withLocalFallback(
+    callCloud('getNote', { noteId }).then((res) => (res.note ? formatNote(res.note) : null)),
+    () => getNote(noteId),
+    'getNote'
+  );
+}
+
+async function getFavoritesAsync() {
+  return withLocalFallback(
+    callCloud('getFavorites').then((res) => (res.list || []).map(formatNote)),
+    () => getFavorites(),
+    'getFavorites'
+  );
+}
+
+async function getTagsAsync() {
+  return withLocalFallback(
+    callCloud('getTags').then((res) => res.list || []),
+    () => getTags(),
+    'getTags'
+  );
+}
+
+async function createTagAsync(name) {
+  return withLocalFallback(
+    callCloud('createTag', { name }).then((res) => res.tag || null),
+    () => createTag(name),
+    'createTag'
+  );
+}
+
+async function saveNoteAsync(payload = {}) {
+  return withLocalFallback(
+    (async () => {
+      const images = await uploadNoteImages(payload.images || []);
+      const data = {
+        ...payload,
+        images
+      };
+      const res = payload._id
+        ? await callCloud('updateNote', data)
+        : await callCloud('createNote', data);
+      updateLocalNote(res.note);
+      return res.note ? formatNote(res.note) : null;
+    })(),
+    () => {
+      saveNote(payload);
+      return null;
+    },
+    payload._id ? 'updateNote' : 'createNote'
+  );
+}
+
+async function deleteNoteAsync(noteId) {
+  return withLocalFallback(
+    callCloud('deleteNote', { noteId }).then((res) => !!res.deleted),
+    () => deleteNote(noteId),
+    'deleteNote'
+  );
+}
+
+async function toggleFavoriteAsync(noteId) {
+  return withLocalFallback(
+    callCloud('toggleFavorite', { noteId }).then((res) => ({
+      isFavorite: !!res.isFavorite,
+      favoriteCount: typeof res.favoriteCount === 'number' ? res.favoriteCount : 0
+    })),
+    () => {
+      const isFavorite = toggleFavorite(noteId);
+      return {
+        isFavorite,
+        favoriteCount: getFavoriteCount(noteId, state())
+      };
+    },
+    'toggleFavorite'
+  );
+}
+
+async function getPlatformStatsAsync() {
+  return withLocalFallback(
+    callCloud('getPlatformStats').then((stats) => ({
+      ...stats,
+      topThree: (stats.topThree || []).map((item) => ({
+        ...item,
+        avatarText: avatarText(item),
+        readingScoreDisplay: item.readingScoreDisplay || `${item.readingScoreText || item.readingScore || 0} 分`
+      })),
+      rankings: (stats.rankings || []).map((item) => ({
+        ...item,
+        avatarText: avatarText(item),
+        readingScoreDisplay: item.readingScoreDisplay || `${item.readingScoreText || item.readingScore || 0} 分`
+      }))
+    })),
+    () => getPlatformStats(),
+    'getPlatformStats'
+  );
+}
+
+async function getMyStatsAsync() {
+  return withLocalFallback(
+    Promise.all([
+      callCloud('updateUserStats'),
+      callCloud('getPlatformStats')
+    ]).then(([statsRes, platformStats]) => {
+      const stats = statsRes.stats || {};
+      const myRank = (platformStats.rankings || []).find((item) => item.openid === getOpenid());
+      return {
+        totalNotes: stats.totalNotes || 0,
+        totalBooks: stats.totalBooks || 0,
+        weekReadingScore: stats.weekReadingScore || '0',
+        weekReadingScoreDisplay: stats.weekReadingScoreDisplay || stats.weekReadingScore || '0',
+        totalReadingScore: stats.totalReadingScore || '0',
+        totalReadingScoreDisplay: stats.totalReadingScoreDisplay || stats.totalReadingScore || '0',
+        weekRank: myRank ? myRank.rank : 0,
+        streakDays: stats.streakDays || 0
+      };
+    }),
+    () => getMyStats(),
+    'getMyStats'
+  );
+}
+
+async function getCheckinMonthAsync(year, month) {
+  return withLocalFallback(
+    callCloud('getCheckinMonth', { year, month }).then((res) => res.month || getCheckinMonth(year, month)),
+    () => getCheckinMonth(year, month),
+    'getCheckinMonth'
+  );
+}
+
+async function getReadingStatsAsync() {
+  return withLocalFallback(
+    callCloud('getReadingStats').then((res) => res.stats || { books: [], tags: [] }),
+    () => getReadingStats(),
+    'getReadingStats'
+  );
+}
+
 module.exports = {
+  callCloud,
+  createTagAsync,
+  currentUserAsync,
   migrateNickname,
   deleteNote,
+  deleteNoteAsync,
   ensureSeed,
   getFavorites,
+  getFavoritesAsync,
   getCheckinMonth,
+  getCheckinMonthAsync,
   getMyStats,
+  getMyStatsAsync,
   getMyNotesByDate,
+  getMyNotesByDateAsync,
   getNote,
+  getNoteAsync,
   getPlatformStats,
+  getPlatformStatsAsync,
   getReadingStats,
+  getReadingStatsAsync,
   getTags,
+  getTagsAsync,
   getUsers,
+  getUsersAsync,
   currentUser,
   createTag,
   isCheckedToday,
+  migrateLocalDataToCloudAsync,
   saveNote,
+  saveNoteAsync,
   searchAllNotes,
+  searchAllNotesAsync,
   searchMyNotes,
-  toggleFavorite
+  searchMyNotesAsync,
+  toggleFavorite,
+  toggleFavoriteAsync,
+  updateCurrentUserProfileAsync,
+  updateCurrentUserProfile
 };

@@ -16,7 +16,7 @@ Page({
     checkinDate: ''
   },
 
-  onLoad(query) {
+  async onLoad(query) {
     enableShareMenu();
     this.setData({
       navHeight: layout.getNavMetrics().totalHeight
@@ -25,7 +25,7 @@ Page({
     const checkinDate = query.checkinDate || '';
     this.setData({ checkinDate: id ? '' : checkinDate });
     if (id) {
-      const note = store.getNote(id);
+      const note = await store.getNoteAsync(id);
       if (note) {
         this.setData({
           id,
@@ -40,10 +40,11 @@ Page({
     this.refreshTags();
   },
 
-  refreshTags() {
+  async refreshTags() {
     const selected = this.data.selectedTags;
+    const tags = await store.getTagsAsync();
     this.setData({
-      tags: store.getTags().map((tag) => ({
+      tags: tags.map((tag) => ({
         ...tag,
         selected: selected.includes(tag.name)
       }))
@@ -79,10 +80,10 @@ Page({
     this.refreshTags();
   },
 
-  addCustomTag() {
+  async addCustomTag() {
     const tag = this.data.customTag.trim();
     if (!tag) return;
-    const createdTag = store.createTag(tag);
+    const createdTag = await store.createTagAsync(tag);
     const tagName = createdTag ? createdTag.name : tag;
     const selected = this.data.selectedTags.includes(tagName) ? this.data.selectedTags : this.data.selectedTags.concat(tagName);
     this.setData({
@@ -130,35 +131,53 @@ Page({
     });
   },
 
-  submit() {
+  async submit() {
     const bookTitle = this.data.bookTitle.trim();
     const content = this.data.content.trim();
-    if (!bookTitle && !content) {
-      wx.showToast({ title: '书名和正文不能同时为空', icon: 'none' });
+    // 1. 独立校验书名
+    if (!bookTitle) {
+      wx.showToast({ title: '请输入书名', icon: 'none' });
       return;
     }
+
+    // 2. 独立校验正文
+    if (!content) {
+      wx.showToast({ title: '请输入笔记正文', icon: 'none' });
+      return;
+    }
+
+    // 3. 校验正文字数上限
     if (content.length > 5000) {
       wx.showToast({ title: '正文最多 5000 字', icon: 'none' });
       return;
     }
-    store.saveNote({
-      _id: this.data.id,
-      bookTitle,
-      content,
-      reflection: this.data.reflection.trim(),
-      tags: this.data.selectedTags,
-      images: this.data.images,
-      checkinDate: this.data.checkinDate
-    });
-    wx.showToast({ title: '已保存', icon: 'success' });
-    setTimeout(() => {
-      const pages = getCurrentPages();
-      if (pages.length > 1) {
-        wx.navigateBack();
-      } else {
-        wx.switchTab({ url: '/pages/index/index' });
-      }
-    }, 350);
+    
+    try {
+      wx.showLoading({ title: '保存中...' });
+      await store.saveNoteAsync({
+        _id: this.data.id,
+        bookTitle,
+        content,
+        reflection: this.data.reflection.trim(),
+        tags: this.data.selectedTags,
+        images: this.data.images,
+        checkinDate: this.data.checkinDate
+      });
+      wx.hideLoading();
+      wx.showToast({ title: '已保存', icon: 'success' });
+      setTimeout(() => {
+        const pages = getCurrentPages();
+        if (pages.length > 1) {
+          wx.navigateBack();
+        } else {
+          wx.switchTab({ url: '/pages/index/index' });
+        }
+      }, 350);
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+      console.warn('save note failed', error);
+    }
   },
 
   deleteNote() {
@@ -168,9 +187,9 @@ Page({
       content: '删除后不会在列表和统计中展示，确定删除吗？',
       confirmText: '删除',
       confirmColor: '#D14343',
-      success: (res) => {
+      success: async (res) => {
         if (res.confirm) {
-          store.deleteNote(this.data.id);
+          await store.deleteNoteAsync(this.data.id);
           wx.showToast({ title: '已删除', icon: 'success' });
           setTimeout(() => wx.navigateBack(), 350);
         }

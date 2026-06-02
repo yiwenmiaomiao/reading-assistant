@@ -12,10 +12,10 @@ Page({
     this.updatePageHeight();
   },
 
-  onShow() {
+  async onShow() {
     enableShareMenu();
     this.updatePageHeight();
-    const rankings = store.getPlatformStats().rankings.slice(0, 20);
+    const rankings = (await store.getPlatformStatsAsync()).rankings.slice(0, 20);
     this.setData({
       rankings: rankings.map((item) => ({
         ...item,

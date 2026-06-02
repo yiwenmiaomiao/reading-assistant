@@ -51,6 +51,7 @@ page {
 
 .filter-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 12rpx;
   margin-top: 16rpx;
 }
@@ -60,12 +61,40 @@ page {
   align-items: center;
   justify-content: center;
   min-width: 150rpx;
+  white-space: nowrap;
   height: 58rpx;
   padding: 0 18rpx;
   color: #8049b4;
   background: rgba(246, 235, 255, 0.92);
   border-radius: 999rpx;
   font-size: 24rpx;
+}
+
+/* 筛选器：日期选择文本占满剩余空间 */
+.chip-picker {
+  flex: 1;
+  text-align: center;
+}
+
+/* 筛选器：清除叉号按钮 */
+.chip-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40rpx;
+  height: 100%;
+  margin-left: 8rpx;
+  font-size: 32rpx;
+  font-weight: 300;
+  color: #9ca3af;
+  line-height: 1;
+}
+
+/* 重置按钮：深蓝字 + 浅蓝底 */
+.reset-chip {
+  min-width: 100rpx; /* 重置按钮不需要像日期那么宽 */
+  color: #1e3a8a !important; 
+  background: rgba(219, 234, 254, 0.92) !important; 
 }
 
 .user-panel {

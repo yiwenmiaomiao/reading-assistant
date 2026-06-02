@@ -20,7 +20,7 @@
 .favorite-btn {
   margin-top: 28rpx !important;
   margin-bottom: 0 !important;
-  display: block !important;
+  display: flex !important;
   clear: both !important;
 }
 

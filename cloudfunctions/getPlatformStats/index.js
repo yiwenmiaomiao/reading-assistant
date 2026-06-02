@@ -31,16 +31,20 @@ exports.main = async () => {
   const now = new Date();
   const todayStart = startOfDay(now);
   const weekStart = startOfWeek(now);
-
-  const todayResult = await db.collection('notes').where({
+  const todayQuery = {
     isDeleted: _.neq(true),
+    visibility: _.neq('private'),
     createdAt: _.gte(todayStart)
-  }).count();
-
-  const weekResult = await db.collection('notes').where({
+  };
+  const weekQuery = {
     isDeleted: _.neq(true),
+    visibility: _.neq('private'),
     createdAt: _.gte(weekStart)
-  }).get();
+  };
+
+  const todayResult = await db.collection('notes').where(todayQuery).count();
+
+  const weekResult = await db.collection('notes').where(weekQuery).get();
 
   const grouped = {};
   weekResult.data.forEach((note) => {

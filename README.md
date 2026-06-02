@@ -21,7 +21,43 @@
 3. AppID 可先使用测试号或游客模式。
 4. 小程序根目录为 `miniprogram/`，云函数根目录为 `cloudfunctions/`。
 
-当前 MVP 使用 `wx.setStorageSync` 做本地数据仓库，便于先完整体验前端流程。接入真实云开发时，可将 `miniprogram/utils/store.js` 中的数据读写替换为 `wx.cloud.callFunction`，云函数骨架已经按 PRD 清单放在 `cloudfunctions/`。
+当前数据层已经改为云开发优先：页面通过 `miniprogram/utils/store.js` 调用云函数读写共享数据，云函数不可用时才回退到本地 `wx.setStorageSync` 模拟数据，便于开发调试。
+
+## 云数据库集合
+
+共享阅读主集合：
+
+- `users`：用户公开资料、头像昵称、统计摘要。
+- `notes`：所有用户发布的共享笔记，包含 `_openid`、`bookId`、`bookTitle`、`content`、`reflection`、`tags`、`images`、`visibility`、`favoriteCount`、`readingScore`、`checkinDate`。
+- `favorites`：兼容当前收藏笔记页面的一用户一笔记收藏关系。
+- `tags`：全局标签池和使用次数。
+- `weekly_rankings`：周榜归档。
+
+为后续读书功能预留：
+
+- `books`：书籍基础信息和全站评分统计。
+- `user_books`：用户自己的书籍阅读状态、评分、私有记录。
+- `reading_logs`：阅读进度、页码、时长和记录。
+- `favorite_folders`：用户收藏夹。
+- `favorite_items`：收藏夹条目，支持收藏 `note` 或 `book`。
+- `note_reads`：后续阅读行为统计预留。
+
+建议索引：
+
+- `notes`: `visibility + isDeleted + createdAt`
+- `notes`: `_openid + isDeleted + createdAt`
+- `notes`: `_openid + checkinDate`
+- `favorites`: `_openid + noteId`
+- `favorites`: `noteId`
+- `favorite_items`: `_openid + folderId + targetType`
+- `books`: `title`
+- `user_books`: `_openid + bookId`
+- `reading_logs`: `_openid + bookId + loggedAt`
+- `weekly_rankings`: `weekStart`
+
+首次接入云环境后，先部署并执行 `cloudfunctions/initDatabase` 创建集合，再部署其余云函数。
+
+如果之前已经在本地 mock 数据里写过笔记，首次拿到真实 `openid` 后，小程序会调用 `importLocalData` 把本地当前用户历史笔记导入云端。导入依据 `importedLocalId` 去重，同一份本地历史数据不会重复导入。
 
 ## 主要目录
 
@@ -42,6 +78,16 @@ miniprogram/
     store.js
     date.js
 cloudfunctions/
+  initDatabase/
+  diagnoseCloudData/
+  importLocalData/
+  getCurrentUser/
+  upsertUserProfile/
+  getUsers/
+  createNote/
+  updateNote/
+  deleteNote/
+  getNote/
   calcWeeklyRank/
   updateUserStats/
   getPlatformStats/

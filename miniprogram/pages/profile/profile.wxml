@@ -1,9 +1,12 @@
 <app-nav title="我的" variant="transparent"></app-nav>
 <scroll-view class="page profile-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
   <view class="profile-head">
-    <view class="avatar profile-avatar">{{user.avatarText}}</view>
+    <button class="avatar profile-avatar profile-avatar-btn" open-type="chooseAvatar" bindchooseavatar="onAvatarChoose" aria-label="选择微信头像">
+      <image wx:if="{{pendingAvatar || user.hasAvatar}}" class="profile-avatar-image" src="{{pendingAvatar || user.avatar}}" mode="aspectFill" />
+      <text wx:else class="profile-avatar-tip">点击选择头像</text>
+    </button>
     <view class="profile-info">
-      <view class="profile-name">{{user.nickname}}</view>
+      <input class="profile-name-input" type="nickname" value="{{user.nickname}}" bindinput="onNicknameInput" bindblur="onNicknameBlur" placeholder="点击输入昵称" />
       <view class="profile-bio">{{user.bio}}</view>
     </view>
   </view>

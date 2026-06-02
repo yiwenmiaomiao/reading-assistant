@@ -16,7 +16,9 @@ exports.main = async (event) => {
     data: {
       name,
       createdBy: OPENID,
-      createdAt: new Date()
+      usageCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
   });
 

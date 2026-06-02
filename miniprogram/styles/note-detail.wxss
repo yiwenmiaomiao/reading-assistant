@@ -192,6 +192,7 @@ swiper-item {
   flex-direction: column;
   align-items: center;
   pointer-events: auto;
+  position: relative;
 }
 
 .detail-favorite-count {
@@ -204,7 +205,7 @@ swiper-item {
 
 .favorite-delta {
   position: absolute;
-  top: 50%;
+  top: 42rpx;
   left: 50%;
   z-index: 999;
   color: #000000;
@@ -216,11 +217,11 @@ swiper-item {
 }
 
 .favorite-delta-plus {
-  animation: favoritePlusFloat 1200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: favoritePlusFloat 2000ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .favorite-delta-minus {
-  animation: favoriteMinusFloat 1200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: favoriteMinusFloat 2000ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .neon-capsule-btn,
@@ -291,16 +292,18 @@ swiper-item {
 @keyframes favoritePlusFloat {
   0% {
     opacity: 0;
+    /* 起始点在按钮中心偏下一点，准备弹出 */
     transform: translate(-50%, -50%) translateY(8rpx) scale(0.9);
   }
-
-  18% {
+  15% {
     opacity: 1;
+    /* 快速向上方冲破按钮上边缘，并放大强调按压感 */
+    transform: translate(-50%, -50%) translateY(-24rpx) scale(1.15);
   }
-
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) translateY(-64rpx) scale(1.08);
+    /* 缓慢向高空飘散并彻底隐形 (位移距离拉大到 140rpx) */
+    transform: translate(-50%, -50%) translateY(-140rpx) scale(0.9);
   }
 }
 
@@ -309,13 +312,12 @@ swiper-item {
     opacity: 0;
     transform: translate(-50%, -50%) translateY(-8rpx) scale(0.9);
   }
-
-  18% {
+  15% {
     opacity: 1;
+    transform: translate(-50%, -50%) translateY(24rpx) scale(1.15);
   }
-
   100% {
     opacity: 0;
-    transform: translate(-50%, -50%) translateY(64rpx) scale(1.08);
+    transform: translate(-50%, -50%) translateY(140rpx) scale(0.9);
   }
 }
