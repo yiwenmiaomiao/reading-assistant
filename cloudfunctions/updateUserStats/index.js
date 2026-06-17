@@ -69,22 +69,33 @@ exports.main = async (event) => {
     streakDays
   };
 
-  const users = await db.collection('users').where({ _openid: openid }).get();
-  if (users.data.length) {
-    await db.collection('users').doc(users.data[0]._id).update({ data: { stats } });
+  // ==============================================================
+  // 核心修改区：不再直接修改 users 表，而是把数据写入独立的 user_stats 表
+  // ==============================================================
+  const statsCollection = db.collection('user_stats');
+  const userStats = await statsCollection.where({ _openid: openid }).get();
+
+  if (userStats.data.length > 0) {
+    // 1. 如果该用户在 user_stats 中已有记录，仅更新各项统计数据和更新时间
+    await statsCollection.doc(userStats.data[0]._id).update({ 
+      data: { 
+        ...stats, 
+        updatedAt: new Date() 
+      } 
+    });
   } else {
-    await db.collection('users').add({
+    // 2. 如果不存在记录，则新建一条属于该用户的统计数据，此时把所有字段平铺
+    await statsCollection.add({
       data: {
         _openid: openid,
-        nickname: '',
-        avatar: '',
-        bio: '',
-        stats,
+        ...stats,
         createdAt: new Date(),
         updatedAt: new Date()
       }
     });
   }
+  // ==============================================================
 
+  // 返回格式保持原样，以确保前端 store.js 中的 statsRes.stats 能够平滑接收数据
   return { stats };
 };

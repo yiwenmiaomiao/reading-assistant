@@ -216,3 +216,11 @@ page {
   font-size: 24rpx;
   text-align: center;
 }
+
+.empty {
+  padding-top: 160rpx;
+  text-align: center;
+  color: #a0aab5;
+  font-size: 28rpx;
+  font-weight: 300; 
+}

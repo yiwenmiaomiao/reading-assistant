@@ -116,3 +116,17 @@
     background-position: -200% 0%;
   }
 }
+
+/* --- 年份标题样式 --- */
+.year-title {
+  font-size: 34rpx;
+  font-weight: 800;
+  color: #5E2B97;
+  margin: 10rpx 0 24rpx 10rpx;
+  text-shadow: 0 2rpx 4rpx rgba(255, 255, 255, 0.6);
+}
+
+/* 如果有多个年份，后续年份顶部增加间距 */
+.year-title:not(:first-child) {
+  margin-top: 50rpx;
+}

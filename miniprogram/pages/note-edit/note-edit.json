@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "写笔记",
-  "navigationStyle": "custom"
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "profile-gate": "/components/profile-gate/profile-gate"
+  }
 }

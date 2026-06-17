@@ -16,6 +16,8 @@ Page({
     checkinDate: ''
   },
 
+  
+
   async onLoad(query) {
     enableShareMenu();
     this.setData({

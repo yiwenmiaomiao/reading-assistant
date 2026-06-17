@@ -10,8 +10,13 @@ exports.main = async (event = {}) => {
   if (!name) throw new Error('收藏夹名称不能为空');
 
   const now = new Date();
+  
+  // 核心修改：接收 isPublic 属性，默认为 false (私密)
+  const isPublic = event.isPublic === true;
+
   const data = {
     name,
+    isPublic,
     sort: Number(event.sort || 0),
     updatedAt: now
   };

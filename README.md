@@ -80,6 +80,7 @@ miniprogram/
 cloudfunctions/
   initDatabase/
   diagnoseCloudData/
+  cleanupNoteAuthorFields/
   importLocalData/
   getCurrentUser/
   upsertUserProfile/

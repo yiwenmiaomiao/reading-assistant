@@ -301,6 +301,19 @@ Component({
         return;
       }
 
+      // ====== 【新增代码：切换菜单时自动关闭当前页面的登录弹窗】 ======
+      const pages = getCurrentPages();
+      if (pages.length > 0) {
+        const currentPage = pages[pages.length - 1];
+        // 找到当前即将离开的页面上的弹窗组件
+        const gate = currentPage.selectComponent('#profileGate');
+        if (gate) {
+          // 关闭弹窗，并清空临时保存的点击回调（防止下次错乱）
+          gate.setData({ showProfileGate: false });
+          gate.successCallback = null;
+        }
+      }
+
       recordTabTransition(this.data.selected, selected);
       this.moveSlider(selected);
       wx.switchTab({
@@ -313,6 +326,32 @@ Component({
     },
 
     goCreate() {
+      const app = getApp();
+      
+      // 1. 在跳转前进行拦截
+      if (app.hasCompletedProfile && !app.hasCompletedProfile()) {
+        
+        // 获取当前用户停留在哪个页面（首页/笔记/我的）
+        const pages = getCurrentPages();
+        const currentPage = pages[pages.length - 1];
+        
+        // 在当前页面上唤起弹窗
+        const gate = currentPage.selectComponent('#profileGate');
+        if (gate) {
+          // 【核心修改】：把跳转代码作为函数传给 show()
+          gate.show(() => {
+            // 这个大括号里的代码，只有在登录完全成功后才会被执行！
+            wx.navigateTo({
+              url: '/pages/note-edit/note-edit'
+            });
+          });
+        }
+        
+        // return 阻断运行，不往下走跳转逻辑了
+        return; 
+      }
+
+      // 2. 如果已完善资料，正常跳转到编辑页
       wx.navigateTo({
         url: '/pages/note-edit/note-edit'
       });

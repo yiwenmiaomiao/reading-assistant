@@ -41,21 +41,4 @@
   </view>
 </scroll-view>
 
-<view class="profile-gate-mask" wx:if="{{showProfileGate}}">
-  <view class="profile-gate-card">
-    <view class="profile-gate-kicker">微信登录</view>
-    <view class="profile-gate-title">同步头像和昵称</view>
-    <view class="profile-gate-desc">已自动使用微信登录获取账号标识。请选择微信头像昵称，之后发布的笔记会关联到你的账号。</view>
-
-    <button class="avatar profile-gate-avatar" open-type="chooseAvatar" bindchooseavatar="onGateAvatarChoose" disabled="{{profileLoggingIn}}">
-      <image wx:if="{{profileAvatar}}" class="profile-gate-avatar-image" src="{{profileAvatar}}" mode="aspectFill" />
-      <text wx:else class="profile-gate-avatar-tip">点击选择头像</text>
-    </button>
-
-    <input class="profile-gate-input" type="nickname" value="{{profileNickname}}" bindinput="onGateNicknameInput" placeholder="点击输入昵称" disabled="{{profileLoggingIn}}" />
-
-    <button class="profile-gate-submit" bindtap="completeProfileGate" disabled="{{profileLoggingIn}}">
-      {{profileLoggingIn ? '正在登录...' : '进入首页'}}
-    </button>
-  </view>
-</view>
+<profile-gate id="profileGate"></profile-gate>

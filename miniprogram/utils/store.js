@@ -3,6 +3,7 @@ const dateUtil = require('./date');
 const STORAGE_KEY = 'reading_notes_mvp_state_v1';
 const CLOUD_MIGRATED_KEY = 'reading_notes_cloud_migrated_v1';
 const PAGE_SIZE = 20;
+const tempFileUrlCache = {};
 
 function hasCloud() {
   return !!(typeof wx !== 'undefined' && wx.cloud && wx.cloud.callFunction);
@@ -24,19 +25,41 @@ function callCloud(name, data = {}) {
 }
 
 function uploadCloudFile(filePath, index, directory = 'note-images') {
-  if (!filePath || /^(cloud|https?):\/\//.test(filePath) || !wx.cloud || !wx.cloud.uploadFile) {
+  // 如果已经是常规网络链接，直接放行
+  if (!filePath || (/^https?:\/\//.test(filePath) && !filePath.includes('tmp/'))) {
     return Promise.resolve(filePath);
   }
 
   const extMatch = `${filePath}`.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
   const ext = extMatch ? extMatch[1] : 'jpg';
-  const cloudPath = `${directory}/${getOpenid()}/${Date.now()}_${index}.${ext}`;
 
   return new Promise((resolve, reject) => {
-    wx.cloud.uploadFile({
-      cloudPath,
-      filePath,
-      success: (res) => resolve(res.fileID),
+    const fs = wx.getFileSystemManager();
+    
+    // 异步将本地临时图片读取为 base64
+    fs.readFile({
+      filePath: filePath,
+      encoding: 'base64',
+      success: async (fileRes) => {
+        try {
+          const res = await callCloud('uploadToOA', {
+            base64Data: fileRes.data,
+            extension: ext
+          });
+
+          if (res && res.success && res.url) {
+            // 公众号接口返回的是 http，强制替换为 https 保证小程序正常渲染
+            let httpsUrl = res.url.trim().replace(/^http:\/\//i, 'https://');
+            resolve(httpsUrl);
+          } else {
+            console.error('[公众号图床上传失败]', res.error);
+            reject(new Error('上传图床失败'));
+          }
+        } catch (error) {
+          console.error('[图床云函数调用失败]', error);
+          reject(error);
+        }
+      },
       fail: reject
     });
   });
@@ -48,6 +71,83 @@ function uploadNoteImages(images = []) {
 
 function uploadAvatar(avatar) {
   return uploadCloudFile(avatar, 'avatar', 'avatars');
+}
+
+function isCloudFile(filePath) {
+  return /^cloud:\/\//.test(`${filePath || ''}`);
+}
+
+function isRemoteFile(filePath) {
+  return /^(cloud|https?):\/\//.test(`${filePath || ''}`);
+}
+
+async function resolveCloudFileUrl(fileID) {
+  if (!isCloudFile(fileID) || !wx.cloud || !wx.cloud.getTempFileURL) {
+    return fileID;
+  }
+
+  if (tempFileUrlCache[fileID]) {
+    return tempFileUrlCache[fileID];
+  }
+
+  const res = await new Promise((resolve, reject) => {
+    wx.cloud.getTempFileURL({
+      fileList: [fileID],
+      success: resolve,
+      fail: reject
+    });
+  });
+  const file = res.fileList && res.fileList[0];
+  const tempFileURL = file && file.tempFileURL;
+  if (tempFileURL) {
+    tempFileUrlCache[fileID] = tempFileURL;
+    return tempFileURL;
+  }
+  return fileID;
+}
+
+async function resolveNoteAssetUrls(note) {
+  const next = { ...note };
+  if (next.user && isCloudFile(next.user.avatar)) {
+    next.user = {
+      ...next.user,
+      avatar: await resolveCloudFileUrl(next.user.avatar)
+    };
+  }
+
+  if (next.author && isCloudFile(next.author.avatar)) {
+    next.author = {
+      ...next.author,
+      avatar: await resolveCloudFileUrl(next.author.avatar)
+    };
+  }
+
+  if (next.authorAvatar && isCloudFile(next.authorAvatar)) {
+    next.authorAvatar = await resolveCloudFileUrl(next.authorAvatar);
+  }
+
+  if (Array.isArray(next.images) && next.images.length > 0) {
+    next.images = await Promise.all(
+      next.images.map(img => isCloudFile(img) ? resolveCloudFileUrl(img) : img)
+    );
+  }
+  return next;
+}
+
+async function resolveNoteListAssetUrls(list = []) {
+  return Promise.all((list || []).map((note) => resolveNoteAssetUrls(note)));
+}
+
+async function resolveUserAssetUrls(user = {}) {
+  if (!isCloudFile(user.avatar)) return user;
+  return {
+    ...user,
+    avatar: await resolveCloudFileUrl(user.avatar)
+  };
+}
+
+async function resolveUserListAssetUrls(list = []) {
+  return Promise.all((list || []).map((user) => resolveUserAssetUrls(user)));
 }
 
 function withLocalFallback(promise, fallback, label) {
@@ -85,94 +185,11 @@ function dayIso(offset) {
 }
 
 function createSeedState() {
-  const openid = getOpenid();
   return {
-    users: [
-      {
-        _openid: openid,
-        nickname: defaultNickname(openid),
-        avatar: '',
-        bio: '把读过的书变成可复用的思考。',
-        createdAt: dayIso(-18)
-      },
-      {
-        _openid: 'user_lin',
-        nickname: '林舟',
-        avatar: '',
-        bio: '偏爱历史和商业传记。',
-        createdAt: dayIso(-15)
-      },
-      {
-        _openid: 'user_qing',
-        nickname: '晴也',
-        avatar: '',
-        bio: '小说、心理学和随笔读者。',
-        createdAt: dayIso(-11)
-      }
-    ],
-    tags: [
-      { _id: 'tag_1', name: '认知', createdBy: openid, createdAt: dayIso(-8) },
-      { _id: 'tag_2', name: '方法论', createdBy: 'user_lin', createdAt: dayIso(-7) },
-      { _id: 'tag_3', name: '小说', createdBy: 'user_qing', createdAt: dayIso(-6) }
-    ],
-    notes: [
-      {
-        _id: 'note_1',
-        _openid: openid,
-        bookTitle: '如何阅读一本书',
-        content: '主动阅读不是把字看完，而是在阅读前提出问题，在阅读中寻找结构，在阅读后用自己的语言复述。',
-        reflection: '以后每读一本非虚构书，都先写下三个问题，再开始做笔记。',
-        tags: ['方法论', '认知'],
-        images: [],
-        isDeleted: false,
-        createdAt: dayIso(0),
-        updatedAt: dayIso(0)
-      },
-      {
-        _id: 'note_2',
-        _openid: 'user_lin',
-        bookTitle: '置身事内',
-        content: '理解地方政府的激励结构，很多宏观现象就不再只是抽象的数字，而是由具体组织和人推动出来的结果。',
-        reflection: '政策阅读要同时看目标、约束和激励。',
-        tags: ['认知'],
-        images: [],
-        isDeleted: false,
-        createdAt: dayIso(-1),
-        updatedAt: dayIso(-1)
-      },
-      {
-        _id: 'note_3',
-        _openid: 'user_qing',
-        bookTitle: '献给阿尔吉侬的花束',
-        content: '智力提升并没有自动带来幸福，关系、尊严和被理解的需求一直都在。',
-        reflection: '好的小说会让抽象议题重新长出人的体温。',
-        tags: ['小说'],
-        images: [],
-        isDeleted: false,
-        createdAt: dayIso(-2),
-        updatedAt: dayIso(-2)
-      },
-      {
-        _id: 'note_4',
-        _openid: openid,
-        bookTitle: '深度工作',
-        content: '高质量产出来自长时间无干扰的专注。真正稀缺的不是信息，而是能把信息转化为能力的注意力。',
-        reflection: '把早晨第一个小时留给最难的任务。',
-        tags: ['方法论'],
-        images: [],
-        isDeleted: false,
-        createdAt: dayIso(-3),
-        updatedAt: dayIso(-3)
-      }
-    ],
-    favorites: [
-      {
-        _id: 'fav_1',
-        _openid: openid,
-        noteId: 'note_2',
-        createdAt: dayIso(-1)
-      }
-    ]
+    users: [],
+    tags: [],
+    notes: [],
+    favorites: []
   };
 }
 
@@ -219,7 +236,7 @@ function migrateNickname() {
   current.users.forEach((user) => {
     if (user._openid === 'user_me') {
       user._openid = openid;
-      if (user.nickname === '我' || user.nickname === '读者ser_me') {
+      if (user.nickname === '我' || user.nickname === '读者ser_me'|| user.nickname === '读者') {
         user.nickname = defaultNickname(openid);
       }
     
@@ -307,10 +324,11 @@ function toDateValue(value) {
 
 function formatUser(user = {}) {
   const nickname = user.nickname || defaultNickname(user._openid || getOpenid());
+  const avatar = `${user.avatar || ''}`;
   return {
     ...user,
     nickname,
-    avatar: user.avatar || '',
+    avatar: isRemoteFile(avatar) ? avatar : '',
     avatarText: avatarText({ nickname })
   };
 }
@@ -318,7 +336,12 @@ function formatUser(user = {}) {
 function formatNote(note = {}) {
   const tags = Array.isArray(note.tags) ? note.tags : [];
   const images = Array.isArray(note.images) ? note.images : [];
-  const user = formatUser(note.user || {});
+  const rawUser = note.user || note.author || { 
+    _openid: note._openid,
+    nickname: note.authorNickname || '',
+    avatar: note.authorAvatar || ''
+  };
+  const user = formatUser(note.user || { _openid: note._openid });
   const content = `${note.content || ''}`;
   const createdAt = toDateValue(note.createdAt);
   const favoriteCount = typeof note.favoriteCount === 'number' ? note.favoriteCount : 0;
@@ -394,7 +417,17 @@ function formatScore(score) {
 
 function enrich(note, baseState) {
   const users = getUserMap(baseState);
-  const user = users[note._openid] || {};
+
+  const rawUser = note.user || note.author || {
+    _openid: note._openid,
+    nickname: note.authorNickname || '',
+    avatar: note.authorAvatar || ''
+  };
+
+  const user = formatUser({
+    _openid: note._openid,
+    ...(users[note._openid] || {})
+  });
   const favorite = baseState.favorites.some((item) => item._openid === getOpenid() && getFavoriteNoteId(item) === note._id);
   const favoriteCount = typeof note.favoriteCount === 'number'
     ? note.favoriteCount
@@ -844,6 +877,23 @@ async function migrateLocalDataToCloudAsync() {
 
   const openid = getOpenid();
   const current = load();
+
+  // ====== 🛡️ 核心修复：拦截线上手机残留的旧缓存脏数据 ======
+  const mockNoteIds = ['note_1', 'note_2', 'note_3', 'note_4'];
+  const mockFavIds = ['fav_1'];
+  const mockUserIds = ['user_lin', 'user_qing', 'user_me'];
+
+  // 只保留真正的用户数据
+  const realNotes = (current.notes || []).filter(note => !mockNoteIds.includes(note._id));
+  const realFavs = (current.favorites || []).filter(fav => !mockFavIds.includes(fav._id));
+  const realUsers = (current.users || []).filter(user => !mockUserIds.includes(user._openid));
+
+  // 如果过滤完发现根本没有真实笔记，就直接打上“已迁移”的标记，并终止上传
+  if (realNotes.length === 0) {
+    wx.setStorageSync(`${CLOUD_MIGRATED_KEY}_${openid}`, true);
+    return { migrated: false, skipped: true };
+  }
+  
   return withLocalFallback(
     callCloud('importLocalData', {
       users: current.users || [],
@@ -880,7 +930,10 @@ async function updateCurrentUserProfileAsync(profile = {}) {
 
 async function getUsersAsync() {
   return withLocalFallback(
-    callCloud('getUsers').then((res) => (res.list || []).map(formatUser)),
+    callCloud('getUsers').then(async (res) => {
+      const list = await resolveUserListAssetUrls(res.list || []);
+      return list.map(formatUser);
+    }),
     () => getUsers(),
     'getUsers'
   );
@@ -891,13 +944,16 @@ async function searchAllNotesAsync(options = {}) {
     callCloud('searchAllNotes', {
       ...options,
       pageSize: options.pageSize || PAGE_SIZE
-    }).then((res) => ({
-      list: (res.list || []).map(formatNote),
-      total: res.total || 0,
-      hasMore: !!res.hasMore,
-      page: res.page || options.page || 1,
-      pageSize: res.pageSize || options.pageSize || PAGE_SIZE
-    })),
+    }).then(async (res) => {
+      const list = await resolveNoteListAssetUrls(res.list || []);
+      return {
+        list: list.map(formatNote),
+        total: res.total || 0,
+        hasMore: !!res.hasMore,
+        page: res.page || options.page || 1,
+        pageSize: res.pageSize || options.pageSize || PAGE_SIZE
+      };
+    }),
     () => searchAllNotes(options),
     'searchAllNotes'
   );
@@ -905,7 +961,10 @@ async function searchAllNotesAsync(options = {}) {
 
 async function searchMyNotesAsync(keyword = '') {
   return withLocalFallback(
-    callCloud('searchMyNotes', { keyword }).then((res) => (res.list || []).map(formatNote)),
+    callCloud('searchMyNotes', { keyword }).then(async (res) => {
+      const list = await resolveNoteListAssetUrls(res.list || []);
+      return list.map(formatNote);
+    }),
     () => searchMyNotes(keyword),
     'searchMyNotes'
   );
@@ -913,7 +972,10 @@ async function searchMyNotesAsync(keyword = '') {
 
 async function getMyNotesByDateAsync(ymd) {
   return withLocalFallback(
-    callCloud('searchMyNotes', { date: ymd }).then((res) => (res.list || []).map(formatNote)),
+    callCloud('searchMyNotes', { date: ymd }).then(async (res) => {
+      const list = await resolveNoteListAssetUrls(res.list || []);
+      return list.map(formatNote);
+    }),
     () => getMyNotesByDate(ymd),
     'getMyNotesByDate'
   );
@@ -921,7 +983,7 @@ async function getMyNotesByDateAsync(ymd) {
 
 async function getNoteAsync(noteId) {
   return withLocalFallback(
-    callCloud('getNote', { noteId }).then((res) => (res.note ? formatNote(res.note) : null)),
+    callCloud('getNote', { noteId }).then(async (res) => (res.note ? formatNote(await resolveNoteAssetUrls(res.note)) : null)),
     () => getNote(noteId),
     'getNote'
   );
@@ -929,7 +991,10 @@ async function getNoteAsync(noteId) {
 
 async function getFavoritesAsync() {
   return withLocalFallback(
-    callCloud('getFavorites').then((res) => (res.list || []).map(formatNote)),
+    callCloud('getFavorites').then(async (res) => {
+      const list = await resolveNoteListAssetUrls(res.list || []);
+      return list.map(formatNote);
+    }),
     () => getFavorites(),
     'getFavorites'
   );
@@ -1000,19 +1065,23 @@ async function toggleFavoriteAsync(noteId) {
 
 async function getPlatformStatsAsync() {
   return withLocalFallback(
-    callCloud('getPlatformStats').then((stats) => ({
-      ...stats,
-      topThree: (stats.topThree || []).map((item) => ({
-        ...item,
-        avatarText: avatarText(item),
-        readingScoreDisplay: item.readingScoreDisplay || `${item.readingScoreText || item.readingScore || 0} 分`
-      })),
-      rankings: (stats.rankings || []).map((item) => ({
-        ...item,
-        avatarText: avatarText(item),
-        readingScoreDisplay: item.readingScoreDisplay || `${item.readingScoreText || item.readingScore || 0} 分`
-      }))
-    })),
+    callCloud('getPlatformStats').then(async (stats) => {
+      const topThree = await resolveUserListAssetUrls(stats.topThree || []);
+      const rankings = await resolveUserListAssetUrls(stats.rankings || []);
+      return {
+        ...stats,
+        topThree: topThree.map((item) => ({
+          ...item,
+          avatarText: avatarText(item),
+          readingScoreDisplay: item.readingScoreDisplay || `${item.readingScoreText || item.readingScore || 0} 分`
+        })),
+        rankings: rankings.map((item) => ({
+          ...item,
+          avatarText: avatarText(item),
+          readingScoreDisplay: item.readingScoreDisplay || `${item.readingScoreText || item.readingScore || 0} 分`
+        }))
+      };
+    }),
     () => getPlatformStats(),
     'getPlatformStats'
   );

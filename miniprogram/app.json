@@ -1,7 +1,7 @@
 {
   "pages": [
-    "pages/index/index",
     "pages/notes/notes",
+    "pages/index/index",
     "pages/profile/profile",
     "pages/ranking/ranking",
     "pages/my-notes/my-notes",
@@ -19,7 +19,8 @@
     "backgroundTextStyle": "dark"
   },
   "usingComponents": {
-    "app-nav": "/components/app-nav/app-nav"
+    "app-nav": "/components/app-nav/app-nav",
+    "profile-gate": "/components/profile-gate/profile-gate"
   },
   "tabBar": {
     "custom": true,

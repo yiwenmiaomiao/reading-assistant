@@ -205,3 +205,11 @@ page {
     inset -2rpx -2rpx 6rpx rgba(0, 0, 0, 0.05),
     0 4rpx 10rpx rgba(0, 0, 0, 0.1) !important;
 }
+
+.empty {
+  padding-top: 160rpx;
+  text-align: center;
+  color: #a0aab5;
+  font-size: 28rpx;
+  font-weight: 300; 
+}

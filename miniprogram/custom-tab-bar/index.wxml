@@ -19,4 +19,7 @@
   </view>
 </view>
 
+
 <draggable-fab bind:tap="goCreate"></draggable-fab>
+
+

@@ -220,6 +220,16 @@ Page({
   },
 
   async toggleFavorite(event) {
+    const app = getApp();
+    
+    // --- 【关键修改】操作前拦截 ---
+    if (app.hasCompletedProfile && !app.hasCompletedProfile()) {
+      // 没完善资料，弹出登录框
+      const gate = this.selectComponent('#profileGate');
+      if (gate) gate.show();
+      return; 
+    }
+    
     const index = Number(event.currentTarget.dataset.index);
     const note = this.data.notes[index];
     if (!note) return;

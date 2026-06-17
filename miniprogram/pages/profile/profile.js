@@ -17,6 +17,17 @@ Page({
 
   async onShow() {
     this.updatePageHeight();
+
+    // --- 【关键修改】进入即拦截 ---
+    const app = getApp();
+    if (app.hasCompletedProfile && !app.hasCompletedProfile()) {
+      // 唤起组件弹窗，并中断后续渲染
+      const gate = this.selectComponent('#profileGate');
+      console.log('测试能否找到弹窗组件：', gate);
+      if (gate) gate.show();
+      return; 
+    }
+
     const user = await store.currentUserAsync();
     const stats = await store.getMyStatsAsync();
     enableShareMenu();
@@ -29,13 +40,16 @@ Page({
       }
     });
     syncTabBar(this, 2);
+
   },
 
   updatePageHeight() {
     const info = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
-    const navHeight = layout.getNavMetrics().totalHeight;
+    // 使用你顶部引入的 layout 工具获取导航栏高度
+    const metrics = layout.getNavMetrics ? layout.getNavMetrics() : { totalHeight: 0 };
+    
     this.setData({
-      pageHeight: Math.max(420, (info.windowHeight || 667) - navHeight)
+      pageHeight: (info.windowHeight || 667) - (metrics.totalHeight || 0)
     });
   },
 

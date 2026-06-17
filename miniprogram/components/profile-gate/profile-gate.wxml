@@ -1,0 +1,18 @@
+<view class="profile-gate-mask" wx:if="{{showProfileGate}}"bindtap="closeGate">
+  <view class="profile-gate-card" catchtap="stopTap">
+    <view class="profile-gate-kicker">用户登录</view>
+    <view class="profile-gate-title">请输入头像和昵称</view>
+    <view class="profile-gate-desc">已自动使用微信登录获取账号标识。请选择微信头像昵称，之后发布的笔记会关联到你的账号。</view>
+
+    <button class="avatar profile-gate-avatar" open-type="chooseAvatar" bindchooseavatar="onGateAvatarChoose" disabled="{{profileLoggingIn}}">
+      <image wx:if="{{profileAvatar}}" class="profile-gate-avatar-image" src="{{profileAvatar}}" mode="aspectFill" />
+      <text wx:else class="profile-gate-avatar-tip">点击选择头像</text>
+    </button>
+
+    <input class="profile-gate-input" type="nickname" value="{{profileNickname}}" bindinput="onGateNicknameInput" placeholder="点击输入昵称" disabled="{{profileLoggingIn}}" />
+
+    <button class="profile-gate-submit {{(!profileGateReady || profileLoggingIn) ? 'disabled' : ''}}" bindtap="completeProfileGate" disabled="{{profileLoggingIn || !profileGateReady}}">
+      {{profileLoggingIn ? '正在登录...' : '确认并继续'}}
+    </button>
+  </view>
+</view>

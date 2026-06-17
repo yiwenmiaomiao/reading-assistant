@@ -31,6 +31,7 @@ exports.main = async () => {
   const now = new Date();
   const todayStart = startOfDay(now);
   const weekStart = startOfWeek(now);
+  
   const todayQuery = {
     isDeleted: _.neq(true),
     visibility: _.neq('private'),
@@ -42,20 +43,25 @@ exports.main = async () => {
     createdAt: _.gte(weekStart)
   };
 
-  const todayResult = await db.collection('notes').where(todayQuery).count();
-
-  const weekResult = await db.collection('notes').where(weekQuery).get();
+  // ====== 性能优化：显式指定 .limit(1000)，防止超出云函数默认的 100 条限制 ======
+  const todayResult = await db.collection('notes').where(todayQuery).limit(1000).get();
+  const weekResult = await db.collection('notes').where(weekQuery).limit(1000).get();
 
   const grouped = {};
   weekResult.data.forEach((note) => {
     const openid = note._openid;
-    if (!grouped[openid]) grouped[openid] = { openid, noteCount: 0, readingScore: 0, books: {} };
+    if (!grouped[openid]) {
+      grouped[openid] = { openid, noteCount: 0, readingScore: 0, books: {} };
+    }
     grouped[openid].noteCount += 1;
     grouped[openid].readingScore += getReadingScore(note);
-    if (note.bookTitle) grouped[openid].books[note.bookTitle] = true;
+    if (note.bookTitle) {
+      grouped[openid].books[note.bookTitle] = true;
+    }
   });
 
-  const usersResult = await db.collection('users').get();
+  // ====== 性能优化：拉取用户基础资料用于匹配时，也放大到 1000 条限制 ======
+  const usersResult = await db.collection('users').limit(1000).get();
   const users = usersResult.data.reduce((map, user) => {
     map[user._openid] = user;
     return map;
@@ -76,11 +82,10 @@ exports.main = async () => {
       };
     })
     .filter((item) => item.readingScore > 0)
-    .sort((a, b) => b.readingScore - a.readingScore || b.noteCount - a.noteCount || b.bookCount - a.bookCount)
-    .map((item, index) => ({ ...item, rank: index + 1 }));
+    .sort((a, b) => b.readingScore - a.readingScore || b.noteCount - a.noteCount || b.bookCount - a.bookCount);
 
   return {
-    todayCount: todayResult.total,
+    todayCount: todayResult.data.length,
     weekCount: weekResult.data.length,
     rankings,
     topThree: rankings.slice(0, 3)

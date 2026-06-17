@@ -15,6 +15,7 @@ async function ensureDefaultFolder(openid) {
     name: '默认收藏夹',
     sort: 0,
     isDefault: true,
+    isPublic: false, // 核心修改：默认收藏夹为私密
     createdAt: now,
     updatedAt: now
   };

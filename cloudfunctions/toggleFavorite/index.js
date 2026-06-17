@@ -20,6 +20,7 @@ async function ensureDefaultFolder(openid) {
     name: '默认收藏夹',
     sort: 0,
     isDefault: true,
+    isPublic: false, // 默认收藏夹设为私密
     createdAt: now,
     updatedAt: now
   };
@@ -42,19 +43,24 @@ exports.main = async (event) => {
   }
 
   const note = noteResult.data[0];
-  const exists = await db.collection('favorites').where({
+  
+  // 核心修改：只查询 favorite_items 表
+  const exists = await db.collection('favorite_items').where({
     _openid: OPENID,
-    noteId
+    targetType: 'note',
+    targetId: noteId
   }).get();
 
   if (exists.data.length) {
-    await db.collection('favorites').doc(exists.data[0]._id).remove();
+    // 如果已收藏，从当前用户的所有收藏夹中移除该笔记
     await db.collection('favorite_items').where({
       _openid: OPENID,
       targetType: 'note',
       targetId: noteId
     }).remove();
-    const countResult = await db.collection('favorites').where({ noteId }).count();
+    
+    // 重新计算全站收藏该笔记的数量
+    const countResult = await db.collection('favorite_items').where({ targetId: noteId, targetType: 'note' }).count();
     await db.collection('notes').doc(noteId).update({
       data: {
         favoriteCount: countResult.total,
@@ -64,15 +70,8 @@ exports.main = async (event) => {
     return { isFavorite: false, favoriteCount: countResult.total };
   }
 
+  // 如果未收藏，默认加入到“默认收藏夹”
   const folder = await ensureDefaultFolder(OPENID);
-  await db.collection('favorites').add({
-    data: {
-      _openid: OPENID,
-      noteId,
-      authorOpenid: note._openid,
-      createdAt: new Date()
-    }
-  });
   await db.collection('favorite_items').add({
     data: {
       _openid: OPENID,
@@ -83,7 +82,8 @@ exports.main = async (event) => {
       createdAt: new Date()
     }
   });
-  const countResult = await db.collection('favorites').where({ noteId }).count();
+  
+  const countResult = await db.collection('favorite_items').where({ targetId: noteId, targetType: 'note' }).count();
   await db.collection('notes').doc(noteId).update({
     data: {
       favoriteCount: countResult.total,

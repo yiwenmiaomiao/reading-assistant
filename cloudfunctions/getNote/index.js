@@ -23,17 +23,32 @@ exports.main = async (event = {}) => {
   }
 
   const users = await db.collection('users').where({ _openid: note._openid }).limit(1).get();
-  const favorites = await db.collection('favorites').where({ noteId }).limit(1000).get();
+  
+  // 🌟 核心修改：改查 favorite_items，用 targetId
+  const favorites = await db.collection('favorite_items').where({ 
+    targetId: noteId,
+    targetType: 'note'
+  }).limit(1000).get();
+  
   const favoriteCount = typeof note.favoriteCount === 'number' ? note.favoriteCount : favorites.data.length;
   const isFavorite = favorites.data.some((favorite) => favorite._openid === OPENID);
 
   return {
     note: {
       ...note,
-      user: users.data[0] || {},
+      user: normalizeUser(users.data[0], note._openid),
       favoriteCount,
       favoriteCountText: `${favoriteCount}`,
       isFavorite
     }
   };
 };
+
+function normalizeUser(user, openid) {
+  return {
+    _openid: openid || (user && user._openid) || '',
+    nickname: (user && user.nickname) || '',
+    avatar: (user && user.avatar) || '',
+    bio: (user && user.bio) || ''
+  };
+}

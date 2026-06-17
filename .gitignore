@@ -1,0 +1,16 @@
+# 微信开发者工具特有的本地私有配置（千万别传，否则会和队友冲突）
+project.private.config.json
+
+# npm 依赖文件夹（体积太大，不需要传，别人拉代码后 npm install 即可）
+node_modules/
+
+# 小程序构建 npm 后的产物（可以重新构建生成，不用传）
+miniprogram_npm/
+
+# 编辑器/操作系统生成的隐藏文件
+.vscode/
+.idea/
+.DS_Store
+
+# ⚠️ 极其重要：我们的私密配置文件，绝对不能提交！
+config/env.js

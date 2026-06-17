@@ -10,23 +10,32 @@ async function enrichNotes(notes, openid) {
 
   const noteIds = notes.map((note) => note._id);
   const authorIds = [...new Set(notes.map((note) => note._openid).filter(Boolean))];
-  const favorites = await db.collection('favorites').where({
-    noteId: _.in(noteIds)
+  
+  // 🌟 核心修改 1：改查 favorite_items，并增加 targetType 过滤
+  const favorites = await db.collection('favorite_items').where({
+    targetId: _.in(noteIds),
+    targetType: 'note'
   }).limit(1000).get();
+  
   const users = authorIds.length
     ? await db.collection('users').where({ _openid: _.in(authorIds) }).limit(200).get()
     : { data: [] };
+    
   const userMap = users.data.reduce((map, user) => {
     map[user._openid] = user;
     return map;
   }, {});
+  
+  // 🌟 核心修改 2：把 map 里的 noteId 改成 targetId
   const favoriteCounts = favorites.data.reduce((map, favorite) => {
-    map[favorite.noteId] = (map[favorite.noteId] || 0) + 1;
+    map[favorite.targetId] = (map[favorite.targetId] || 0) + 1;
     return map;
   }, {});
+  
+  // 🌟 核心修改 3：同样把 noteId 改成 targetId
   const myFavoriteIds = favorites.data
     .filter((favorite) => favorite._openid === openid)
-    .map((favorite) => favorite.noteId);
+    .map((favorite) => favorite.targetId);
 
   return notes.map((note) => {
     const favoriteCount = typeof note.favoriteCount === 'number'
@@ -34,7 +43,7 @@ async function enrichNotes(notes, openid) {
       : favoriteCounts[note._id] || 0;
     return {
       ...note,
-      user: userMap[note._openid] || {},
+      user: normalizeUser(userMap[note._openid], note._openid),
       favoriteCount,
       favoriteCountText: `${favoriteCount}`,
       isFavorite: myFavoriteIds.includes(note._id)
@@ -42,6 +51,16 @@ async function enrichNotes(notes, openid) {
   });
 }
 
+function normalizeUser(user, openid) {
+  return {
+    _openid: openid || (user && user._openid) || '',
+    nickname: (user && user.nickname) || '',
+    avatar: (user && user.avatar) || '',
+    bio: (user && user.bio) || ''
+  };
+}
+
+// ... 下面的 exports.main 逻辑完全保持你原来的代码不变 ...
 exports.main = async (event) => {
   const { OPENID } = cloud.getWXContext();
   const page = Number(event.page || 1);
@@ -85,17 +104,14 @@ exports.main = async (event) => {
     .skip((page - 1) * pageSize)
     .limit(pageSize)
     .get();
-  const totalResult = await db.collection('notes')
-    .where(query)
-    .count();
 
-  const list = await enrichNotes(result.data, OPENID);
+  const totalResult = await db.collection('notes').where(query).count();
 
   return {
-    list,
+    list: await enrichNotes(result.data, OPENID),
     total: totalResult.total,
-    hasMore: page * pageSize < totalResult.total,
     page,
-    pageSize
+    pageSize,
+    hasMore: page * pageSize < totalResult.total
   };
 };

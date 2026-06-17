@@ -19,15 +19,6 @@ exports.main = async () => {
     nickname: '',
     avatar: '',
     bio: '',
-    stats: {
-      totalNotes: 0,
-      totalBooks: 0,
-      weekReadingScore: '0',
-      weekReadingScoreDisplay: '0',
-      totalReadingScore: '0',
-      totalReadingScoreDisplay: '0',
-      streakDays: 0
-    },
     createdAt: now,
     updatedAt: now
   };

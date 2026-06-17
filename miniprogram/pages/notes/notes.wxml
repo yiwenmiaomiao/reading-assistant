@@ -118,3 +118,5 @@
     </swiper-item>
   </swiper>
 </view>
+
+<profile-gate id="profileGate"></profile-gate>
