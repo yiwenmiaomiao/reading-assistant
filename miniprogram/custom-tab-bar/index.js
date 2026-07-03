@@ -9,6 +9,7 @@ const TAB_BAR_GAP_RPX = 80;
 const tabList = [
   { pagePath: "/pages/index/index", iconClass: "icon-home", text: "首页" },
   { pagePath: "/pages/notes/notes", iconClass: "icon-book", text: "笔记" },
+  { pagePath: "/pages/trajectory/trajectory", iconClass: "icon-trajectory", text: "轨迹" },
   { pagePath: "/pages/profile/profile", iconClass: "icon-user", text: "我的" }
 ];
 
@@ -33,7 +34,7 @@ function getWindowWidth() {
 function getTabWidth() {
   const windowWidth = getWindowWidth();
   const gap = TAB_BAR_GAP_RPX * windowWidth / 750;
-  return (windowWidth - gap) / tabList.length;
+  return (windowWidth - gap) / tabList.length; // 动态跟随菜单数量，一劳永逸
 }
 
 function getWorkletTranslateX(index) {

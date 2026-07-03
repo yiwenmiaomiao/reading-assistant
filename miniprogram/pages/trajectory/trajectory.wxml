@@ -1,0 +1,87 @@
+<app-nav title="阅读轨迹" variant="transparent"></app-nav>
+<scroll-view class="page trajectory-page safe-bottom" scroll-y="true" style="height: {{pageHeight}}px;" enhanced="{{true}}" bounces="{{true}}" show-scrollbar="{{false}}">
+
+  <!-- 轨迹大画布：模式切换 + 图表合一 -->
+  <view class="card chart-card" style="height: {{chartCardHeight}}px;">
+    <!-- 顶部模式切换 -->
+    <view class="mode-bar">
+      <view class="mode-tabs">
+        <view
+          wx:for="{{modes}}"
+          wx:key="key"
+          class="mode-tab {{currentMode === item.key ? 'active' : ''}}"
+          bindtap="switchMode"
+          data-mode="{{item.key}}"
+        >{{item.label}}</view>
+      </view>
+      <view class="filter-hint" wx:if="{{focusedBookId}}">
+        <text>聚焦</text>
+        <view class="clear-btn" bindtap="onBookTap" data-book-id="{{focusedBookId}}">✕</view>
+      </view>
+    </view>
+
+    <!-- 图表区域 -->
+    <view class="chart-area">
+      <!-- Y 轴：颜色点为坐标，书名悬浮在点上方 -->
+      <cover-view class="y-axis">
+        <cover-view
+          wx:for="{{books}}"
+          wx:key="id"
+          class="y-label {{focusedBookId === item.id ? 'focused' : ''}} {{focusedBookId && focusedBookId !== item.id ? 'dimmed' : ''}}"
+          style="top: {{item.y * 100}}%;"
+          bindtap="onBookTap"
+          data-book-id="{{item.id}}"
+        >
+          <cover-view class="book-name">{{item.name}}</cover-view>
+          <cover-view class="y-dot" style="background-color: {{item.color}};"></cover-view>
+        </cover-view>
+      </cover-view>
+
+      <view class="canvas-viewport">
+        <canvas type="2d" id="trajectoryCanvas" class="trajectory-canvas"></canvas>
+      </view>
+
+      <!-- 可滑动画布 -->
+      <scroll-view class="chart-scroll" scroll-x scroll-left="{{scrollLeftValue}}" scroll-with-animation show-scrollbar="{{false}}" bindscroll="onCanvasScroll" bindtap="onClosePopover">
+        <view class="chart-inner" style="width: {{canvasWidthPx}}px; height: 100%; position: relative;">
+          <view class="grid-lines">
+            <view wx:for="{{books}}" wx:key="id" class="grid-line" style="top: {{item.y * 100}}%;"></view>
+          </view>
+
+          <view class="nodes-layer">
+            <block wx:for="{{renderPoints}}" wx:key="index">
+              <view
+                wx:if="{{!item.type || item.type !== 'pause'}}"
+                class="track-node"
+                style="left: {{item.px}}px; top: {{item.py}}px; z-index: {{activeNodeIndex === index ? 100 : 10}};"
+                catchtap="onNodeTap"
+                data-index="{{index}}"
+              >
+                <view wx:if="{{item.milestone}}" class="milestone">{{item.milestone}}</view>
+                
+                <view 
+                  class="node-exact" 
+                  style="color: {{item.color}}; --node-scale: {{item.scale || 1}}; {{focusedBookId && focusedBookId !== item.bookId ? 'opacity: 0.2;' : ''}}"
+                ></view>
+
+                <view class="popover {{activeNodeIndex === index ? 'show' : ''}}" style="border-color: {{item.color}};">
+                  <view class="pop-tag" style="color: {{item.color}};" wx:if="{{item.tag}}"># {{item.tag}}</view>
+                  <view class="pop-text" wx:if="{{item.text}}">{{item.text}}</view>
+                  <view class="pop-meta" wx:if="{{item.count}}">共 {{item.count}} 张卡片</view>
+                </view>
+              </view>
+            </block>
+          </view>
+
+
+
+          <!-- X 轴：绝对定位，与 mapX 对齐 -->
+          <view class="x-axis">
+            <view wx:for="{{xLabelPositions}}" wx:key="index" class="x-label" style="left: {{item.px}}px;">{{item.label}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+</scroll-view>

@@ -1,0 +1,379 @@
+/* pages/trajectory/trajectory.wxss */
+
+/* =========================================
+  页面背景：与其他页面统一的浅色径向渐变
+  ========================================= */
+.trajectory-page {
+  min-height: 0;
+  background-color: #fdfdfe;
+  background-image:
+    radial-gradient(circle at 80% 10%, rgba(255, 180, 200, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 15% 30%, rgba(200, 160, 255, 0.2) 0%, transparent 50%),
+    radial-gradient(circle at 85% 85%, rgba(160, 200, 255, 0.25) 0%, transparent 45%),
+    radial-gradient(circle at 20% 90%, rgba(255, 200, 220, 0.25) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* =========================================
+  轨迹大画布卡片：撑满主屏
+  ========================================= */
+.chart-card {
+  position: relative;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================
+  顶部模式切换栏
+  ========================================= */
+.mode-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 10rpx;
+  background: rgba(246, 235, 255, 0.6);
+  padding: 8rpx;
+  border-radius: 18rpx;
+}
+
+.mode-tab {
+  text-align: center;
+  padding: 14rpx 36rpx;
+  color: #6b7280;
+  font-size: 26rpx;
+  font-weight: 300;
+  border-radius: 14rpx;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-tab.active {
+  color: #fff;
+  background: linear-gradient(135deg, #8049b4, #7a5cff);
+  font-weight: 400;
+  box-shadow: 0 6rpx 18rpx rgba(128, 73, 180, 0.25);
+}
+
+.filter-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 10rpx;
+  padding: 8rpx 18rpx;
+  color: #8049b4;
+  font-size: 24rpx;
+  font-weight: 300;
+  background: rgba(128, 73, 180, 0.08);
+  border-radius: 999rpx;
+}
+
+.clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: rgba(128, 73, 180, 0.15);
+  font-size: 20rpx;
+}
+
+/* =========================================
+  图表区域：撑满卡片剩余空间
+  ========================================= */
+/* 1. 确保 chart-area（或者你外层的卡片容器）限制溢出 */
+.chart-area {
+  flex: 1;
+  position: relative;
+  width: 100%;
+  overflow: hidden; 
+  z-index: 1;
+}
+
+/* Y 轴：无背景、无阴影，悬浮在画布上，top/bottom 对齐 PADDING_Y */
+.y-axis {
+  position: absolute;
+  left: 0;
+  top: 40px;
+  bottom: 40px;
+  width: 100%;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.y-label {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.y-label.focused .book-name {
+  color: #8049b4;
+  font-weight: 400;
+}
+
+.y-label.dimmed {
+  opacity: 0.3;
+}
+
+.book-name {
+  font-size: 24rpx;
+  color: #6b7280;
+  font-weight: 300;
+  white-space: nowrap;
+  margin-bottom: 32rpx;
+  pointer-events: auto;
+}
+
+.y-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  flex-shrink: 0;
+  pointer-events: auto;
+}
+
+/* Canvas 视口：从 left:0 开始，占满 chart-area */
+.canvas-viewport {
+  position: absolute;
+  left: 30rpx; /* 修改此处：原为 0 */
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 可滑动画布：从 left:0 开始 */
+.chart-scroll {
+  position: absolute;
+  left: 30rpx; /* 修改此处：原为 0 */
+  right: 0;
+  top: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.chart-inner {
+  position: relative;
+  height: 100%;
+}
+
+/* 网格线：top/bottom 对齐 PADDING_Y，与 Y 轴和 Canvas 一致 */
+.grid-lines {
+  position: absolute;
+  left: 0;
+  top: 40px;
+  bottom: 40px;
+  width: 100%;
+  pointer-events: none;
+}
+
+/* 节点层等：全高定位（使用 px/py 绝对坐标） */
+.nodes-layer, .month-labels, .year-labels {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Canvas 轨迹：撑满 canvas-viewport（固定视口），不随 scroll-view 滚动 */
+.trajectory-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grid-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1rpx;
+  background: rgba(128, 73, 180, 0.06);
+}
+
+/* =========================================
+  节点样式
+  ========================================= */
+  .track-node {
+    position: absolute; /* 🌟 核心：脱离默认文档流，让 left 和 top 生效 */
+    transform: translate(-50%, -50%); /* 🌟 核心：让圆点的中心精准对齐坐标轴，而不是左上角对齐 */
+    pointer-events: auto; 
+    width: 48rpx;
+    height: 48rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10; /* 确保气泡在连线之上 */
+  }
+
+/* =========================================
+  精确引擎：空气泡泡 🫧 (Liquid Glass 风格)
+  ========================================= */
+  .node-exact {
+    position: relative;
+    width: 24rpx; /* 设定一个合适的基础外径 */
+    height: 24rpx;
+    border-radius: 50%;
+    
+    /* 1. 泡泡的内部：移除实心，改为极淡的通透底色 */
+    background: rgba(255, 255, 255, 0.1); 
+    
+    /* 3. 核心体积感：
+       inset(内阴影) 向内发光，模拟泡泡边缘的颜色聚集；
+       外层配一个极其微弱的投影 */
+    box-shadow: inset 0 0 10rpx currentColor, 0 4rpx 8rpx rgba(128, 73, 180, 0.08);
+    
+    /* 接收外层传入的 scale 变量进行整体缩放 */
+    transform: scale(var(--node-scale, 1));
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+  }
+  
+  /* 泡泡的玻璃态高光（左上角的一抹球面反光） */
+  .node-exact::after {
+    content: '';
+    position: absolute;
+    top: 12%;
+    left: 12%;
+    width: 35%;
+    height: 25%;
+    /* 使用径向渐变，中心亮四周淡，完美模拟曲面反光 */
+    background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 70%);
+    border-radius: 50%;
+    transform: rotate(-35deg); /* 让高光顺着左上角自然倾斜 */
+    pointer-events: none;
+  }
+
+/* 气泡链：气泡节点 */
+.node-bubble {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2rpx solid currentColor;
+  color: currentColor;
+  font-size: 22rpx;
+  font-weight: 400;
+  box-shadow: 0 4rpx 16rpx rgba(128, 73, 180, 0.15);
+}
+
+.bubble-count {
+  color: #10131f;
+  line-height: 1;
+}
+
+/* 同日多书竖线 */
+.vertical-connect {
+  position: absolute;
+  width: 2rpx;
+  background: linear-gradient(to bottom, transparent, rgba(128, 73, 180, 0.3), transparent);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: -1;
+}
+
+/* 里程碑图标 */
+.milestone {
+  position: absolute;
+  top: -36rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 28rpx;
+}
+
+/* =========================================
+  气泡摘要弹窗
+  ========================================= */
+.popover {
+  position: absolute;
+  bottom: 56rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1rpx solid rgba(128, 73, 180, 0.15);
+  border-radius: 16rpx;
+  padding: 18rpx 20rpx;
+  width: max-content; 
+  min-width: 140rpx; /* 给个保底宽度，防止单数字太窄 */
+  max-width: 460rpx; /* 给个极限宽度，防止文本过长撑爆屏幕 */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  box-shadow: 0 12rpx 32rpx rgba(31, 38, 135, 0.1);
+  z-index: 100;
+}
+
+.popover.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(-4rpx);
+}
+
+.pop-tag {
+  display: inline-block;
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  background: rgba(128, 73, 180, 0.08);
+  border-radius: 6rpx;
+  margin-bottom: 8rpx;
+  font-weight: 400;
+}
+
+.pop-text {
+  font-size: 24rpx;
+  color: #10131f;
+  font-weight: 300;
+  line-height: 1.6;
+}
+
+.pop-meta {
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  color: #6b7280;
+  font-weight: 300;
+}
+
+
+/* =========================================
+  X 轴：绝对定位，与 mapX 对齐
+  ========================================= */
+.x-axis {
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  width: 100%;
+  height: 30px;
+  z-index: 2;
+}
+
+.x-label {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 22rpx;
+  font-weight: 300;
+  color: #6b7280;
+  text-align: center;
+  white-space: nowrap;
+}

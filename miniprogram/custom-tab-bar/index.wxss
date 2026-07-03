@@ -51,11 +51,10 @@
 /* 滑动轨道指示器 */
 .slider-indicator {
   position: absolute;
+  width: calc(100% / 4);
   top: 0;
   left: 0;
-  
-  /* 【兼容核心】：宽度使用视口绝对计算（屏幕宽度 - 两侧40rpx边距）/ 3 */
-  width: calc((100vw - 80rpx) / 3);
+
   height: 100%;
   display: flex;
   justify-content: center;
@@ -174,6 +173,7 @@
   position: relative;
   flex: 1;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
@@ -210,6 +210,12 @@
 .icon-book {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+}
+
+/* 新增：轨迹菜单 ♾️ 图标遮罩 */
+.icon-trajectory {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 12c-1.1-1.5-2.6-2.5-4.5-2.5-2.8 0-5 2.2-5 5s2.2 5 5 5c1.9 0 3.4-1 4.5-2.5 1.1 1.5 2.6 2.5 4.5 2.5 2.8 0 5-2.2 5-5s-2.2-5-5-5c-1.9 0-3.4 1-4.5 2.5z'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 12c-1.1-1.5-2.6-2.5-4.5-2.5-2.8 0-5 2.2-5 5s2.2 5 5 5c1.9 0 3.4-1 4.5-2.5 1.1 1.5 2.6 2.5 4.5 2.5 2.8 0 5-2.2 5-5s-2.2-5-5-5c-1.9 0-3.4 1-4.5 2.5z'/%3E%3C/svg%3E");
 }
 
 .icon-user {
