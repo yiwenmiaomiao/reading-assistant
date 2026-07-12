@@ -21,26 +21,30 @@ Page({
     // --- 【关键修改】进入即拦截 ---
     const app = getApp();
     if (app.hasCompletedProfile && !app.hasCompletedProfile()) {
-      // 唤起组件弹窗，并中断后续渲染
       const gate = this.selectComponent('#profileGate');
-      console.log('测试能否找到弹窗组件：', gate);
       if (gate) gate.show();
-      return; 
+      return;
     }
 
-    const user = await store.currentUserAsync();
-    const stats = await store.getMyStatsAsync();
     enableShareMenu();
-    this.setData({
-      user: this.formatUser(user),
-      stats: {
-        ...stats,
-        weekReadingScoreDisplay: stats.weekReadingScoreDisplay || `${stats.weekReadingScore || 0}`,
-        totalReadingScoreDisplay: stats.totalReadingScoreDisplay || `${stats.totalReadingScore || 0}`
-      }
-    });
-    syncTabBar(this, 2);
+    syncTabBar(this, 3);
 
+    const now = Date.now();
+    if (!app.globalData.lastFetchTime.profile || now - app.globalData.lastFetchTime.profile > 5000) {
+      app.globalData.lastFetchTime.profile = now;
+      const [user, stats] = await Promise.all([
+        store.currentUserAsync(),
+        store.getMyStatsAsync()
+      ]);
+      this.setData({
+        user: this.formatUser(user),
+        stats: {
+          ...stats,
+          weekReadingScoreDisplay: stats.weekReadingScoreDisplay || `${stats.weekReadingScore || 0}`,
+          totalReadingScoreDisplay: stats.totalReadingScoreDisplay || `${stats.totalReadingScore || 0}`
+        }
+      });
+    }
   },
 
   updatePageHeight() {

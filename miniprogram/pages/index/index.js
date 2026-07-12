@@ -19,9 +19,15 @@ Page({
 
   onShow() {
     this.updatePageHeight();
-    this.refresh();
     enableShareMenu();
     syncTabBar(this, 0);
+
+    const app = getApp();
+    const now = Date.now();
+    if (!app.globalData.lastFetchTime.index || now - app.globalData.lastFetchTime.index > 5000) {
+      app.globalData.lastFetchTime.index = now;
+      this.refresh();
+    }
   },
 
   updatePageHeight() {

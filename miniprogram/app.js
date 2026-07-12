@@ -8,14 +8,13 @@ App({
     wx.cloud.init({ traceUser: true });
 
     store.ensureSeed();
-    console.log('seed data exists:', wx.getStorageSync('reading_notes_mvp_state_v1'));
 
     // 静默登录：拿缓存 openid，没有就走 wx.login 换取
     const cachedOpenid = wx.getStorageSync('openid');
     if (cachedOpenid) {
       this.globalData.currentUserId = cachedOpenid;
       store.migrateNickname();
-      this._migrateLocalDataToCloud().then(() => this._notifyCurrentPage());
+      this._migrateLocalDataToCloud();
     } else {
       this._silentLogin();
     }
@@ -31,8 +30,8 @@ App({
             const openid = res.result.openid;
             wx.setStorageSync('openid', openid);
             this.globalData.currentUserId = openid;
-            store.migrateNickname(); 
-            this._migrateLocalDataToCloud().then(() => this._notifyCurrentPage());
+            store.migrateNickname();
+            this._migrateLocalDataToCloud();
           },
         });
       }
@@ -42,18 +41,10 @@ App({
   _migrateLocalDataToCloud() {
     return store.migrateLocalDataToCloudAsync().then((res) => {
       if (res && res.migrated) {
-        console.log('local data migrated to cloud:', res);
+        this.globalData.dataMigrated = true;
       }
       return res;
     });
-  },
-
-  _notifyCurrentPage() {
-    const pages = getCurrentPages();
-    if (pages.length > 0) {
-      const currentPage = pages[pages.length - 1];
-      if (currentPage.onShow) currentPage.onShow();
-    }
   },
 
   hasCompletedProfile() {
@@ -66,6 +57,8 @@ App({
 
   globalData: {
     currentUserId: '',
-    profileCompletedKey: PROFILE_COMPLETED_KEY
+    profileCompletedKey: PROFILE_COMPLETED_KEY,
+    dataMigrated: false,
+    lastFetchTime: {}  // 记录各页面最后请求时间，用于节流
   }
 });

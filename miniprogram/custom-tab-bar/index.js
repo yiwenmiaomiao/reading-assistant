@@ -14,6 +14,13 @@ const tabList = [
 ];
 
 function getActiveTabIndex() {
+  // 🌟 核心修复 1：优先信任最新点击的指令。
+  // 因为在 switchTab 期间，getCurrentPages() 会严重滞后，返回旧页面。
+  if (typeof wx.__latestSelectedTab__ === 'number') {
+    return wx.__latestSelectedTab__;
+  }
+
+  // 如果没有点击记录（比如冷启动），再降级使用页面栈兜底
   const pages = typeof getCurrentPages === 'function' ? getCurrentPages() : [];
   const currentPage = pages[pages.length - 1];
   const currentPath = currentPage && currentPage.route ? `/${currentPage.route}` : '';
@@ -23,7 +30,7 @@ function getActiveTabIndex() {
     return index;
   }
 
-  return typeof wx.__latestSelectedTab__ === 'number' ? wx.__latestSelectedTab__ : 0;
+  return 0;
 }
 
 function getWindowWidth() {
@@ -244,6 +251,7 @@ Component({
 
       const canAnimateWithWorklet = this._workletEnabled && this._workletReady && shouldAnimate && from !== selected;
 
+      // 如果没有任何状态改变，直接拦截
       if (
         selected === this.data.selected &&
         (!this._workletReady || pendingFrom === null) &&
@@ -274,9 +282,29 @@ Component({
       }
     },
 
-    syncSelected(index) {
-      this.updateSelected(index, { animated: false });
-    },
+// 强制同步到指定 index，绕过动画判定，直接复位
+syncSelected(index) {
+  const selected = this.normalizeIndex(index);
+  wx.__latestSelectedTab__ = selected;
+
+  // 🌟 核心修复 2：在强制归位前，必须先唤醒并绑定底层 Worklet 动画引擎！
+  // 否则初次挂载时引擎未就绪，会导致滑块坐标无法注入。
+  this.applyIndicatorStyle();
+  
+  this.setData({ 
+    selected: selected,
+    activeIndex: selected,
+    animating: false,
+    sliderStyle: getSliderStyle(selected)
+  });
+
+  // 如果 Worklet 引擎就绪，强制将底层共享变量归位
+  if (this._workletReady && this._translateX && this._scaleX) {
+    this.updateWorkletMetrics();
+    this._translateX.value = getWorkletTranslateX(selected);
+    this._scaleX.value = 1;
+  }
+},
 
     moveSlider(index) {
       const selected = this.normalizeIndex(index);

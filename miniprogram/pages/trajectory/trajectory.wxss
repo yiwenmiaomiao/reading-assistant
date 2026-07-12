@@ -377,3 +377,19 @@
   text-align: center;
   white-space: nowrap;
 }
+
+/* 在底部追加 */
+.interactive-label {
+  color: #8049b4; /* 赋予主题色暗示可点击 */
+  font-weight: 400;
+  background: rgba(128, 73, 180, 0.08); /* 加个微弱的背景底衬 */
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  transform: translateX(-50%) translateY(-10%); /* 稍微上移居中，抵消 padding 带来的视觉偏移 */
+  transition: all 0.2s ease;
+}
+
+.interactive-label:active {
+  background: rgba(128, 73, 180, 0.2);
+  transform: translateX(-50%) scale(0.9);
+}

@@ -32,11 +32,17 @@ Page({
   },
 
   onShow() {
-    this.loadUsers();
-    this.loadNotes(true);
     this.updateListHeight();
     enableShareMenu();
     syncTabBar(this, 1);
+
+    const app = getApp();
+    const now = Date.now();
+    if (!app.globalData.lastFetchTime.notes || now - app.globalData.lastFetchTime.notes > 5000) {
+      app.globalData.lastFetchTime.notes = now;
+      this.loadUsers();
+      this.loadNotes(true);
+    }
   },
 
   onReady() {

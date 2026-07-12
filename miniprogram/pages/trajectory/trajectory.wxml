@@ -65,8 +65,6 @@
                 ></view>
 
                 <view class="popover {{activeNodeIndex === index ? 'show' : ''}}" style="border-color: {{item.color}};">
-                  <view class="pop-tag" style="color: {{item.color}};" wx:if="{{item.tag}}"># {{item.tag}}</view>
-                  <view class="pop-text" wx:if="{{item.text}}">{{item.text}}</view>
                   <view class="pop-meta" wx:if="{{item.count}}">共 {{item.count}} 张卡片</view>
                 </view>
               </view>
@@ -76,8 +74,18 @@
 
 
           <!-- X 轴：绝对定位，与 mapX 对齐 -->
+          <!-- 🌟 新的基于虚拟轴的 X 轴 -->
           <view class="x-axis">
-            <view wx:for="{{xLabelPositions}}" wx:key="index" class="x-label" style="left: {{item.px}}px;">{{item.label}}</view>
+            <view 
+              wx:for="{{virtualXAxis}}" 
+              wx:key="index" 
+              class="x-label {{item.type !== 'normal' ? 'interactive-label' : ''}}" 
+              style="left: {{item.px}}px;"
+              bindtap="onToggleCollapse"
+              data-index="{{index}}"
+            >
+              {{item.label}}
+            </view>
           </view>
         </view>
       </scroll-view>

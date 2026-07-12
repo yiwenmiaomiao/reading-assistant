@@ -4,6 +4,7 @@ const STORAGE_KEY = 'reading_notes_mvp_state_v1';
 const CLOUD_MIGRATED_KEY = 'reading_notes_cloud_migrated_v1';
 const PAGE_SIZE = 20;
 const tempFileUrlCache = {};
+let _stateCache = null;  // 内存缓存，避免高频同步读 Storage
 
 function hasCloud() {
   return !!(typeof wx !== 'undefined' && wx.cloud && wx.cloud.callFunction);
@@ -108,29 +109,35 @@ async function resolveCloudFileUrl(fileID) {
 
 async function resolveNoteAssetUrls(note) {
   const next = { ...note };
+
+  // 并行解析所有 cloud:// URL
+  const tasks = [];
+  const applyResults = [];
+
   if (next.user && isCloudFile(next.user.avatar)) {
-    next.user = {
-      ...next.user,
-      avatar: await resolveCloudFileUrl(next.user.avatar)
-    };
+    tasks.push(resolveCloudFileUrl(next.user.avatar));
+    applyResults.push((val) => { next.user = { ...next.user, avatar: val }; });
   }
-
   if (next.author && isCloudFile(next.author.avatar)) {
-    next.author = {
-      ...next.author,
-      avatar: await resolveCloudFileUrl(next.author.avatar)
-    };
+    tasks.push(resolveCloudFileUrl(next.author.avatar));
+    applyResults.push((val) => { next.author = { ...next.author, avatar: val }; });
   }
-
   if (next.authorAvatar && isCloudFile(next.authorAvatar)) {
-    next.authorAvatar = await resolveCloudFileUrl(next.authorAvatar);
+    tasks.push(resolveCloudFileUrl(next.authorAvatar));
+    applyResults.push((val) => { next.authorAvatar = val; });
+  }
+  if (Array.isArray(next.images) && next.images.length > 0) {
+    tasks.push(Promise.all(
+      next.images.map(img => isCloudFile(img) ? resolveCloudFileUrl(img) : img)
+    ));
+    applyResults.push((val) => { next.images = val; });
   }
 
-  if (Array.isArray(next.images) && next.images.length > 0) {
-    next.images = await Promise.all(
-      next.images.map(img => isCloudFile(img) ? resolveCloudFileUrl(img) : img)
-    );
+  if (tasks.length > 0) {
+    const results = await Promise.all(tasks);
+    results.forEach((val, i) => applyResults[i](val));
   }
+
   return next;
 }
 
@@ -194,18 +201,25 @@ function createSeedState() {
 }
 
 function load() {
-  return wx.getStorageSync(STORAGE_KEY) || null;
+  // 内存缓存：避免每次都同步读 Storage
+  if (_stateCache) return _stateCache;
+  _stateCache = wx.getStorageSync(STORAGE_KEY) || null;
+  return _stateCache;
 }
 
 function save(state) {
+  _stateCache = state;
   wx.setStorageSync(STORAGE_KEY, state);
   return state;
 }
 
 function ensureSeed() {
-  const current = load();
+  if (_stateCache) return;
+  const current = wx.getStorageSync(STORAGE_KEY);
   if (!current) {
     save(createSeedState());
+  } else {
+    _stateCache = current;
   }
 }
 
@@ -274,8 +288,9 @@ function migrateNickname() {
 
 
 function state() {
+  if (_stateCache) return _stateCache;
   ensureSeed();
-  return load();
+  return _stateCache;
 }
 
 function currentUser() {
@@ -1127,6 +1142,165 @@ async function getReadingStatsAsync() {
   );
 }
 
+// ===== 轨迹数据 =====
+
+const TRAJECTORY_COLOR_PALETTE = [
+  '#8049b4', '#3d7df0', '#34d399', '#f59e0b',
+  '#ec4899', '#06b6d4', '#84cc16', '#f97316'
+];
+
+const _trajectoryCache = {};
+
+function formatYmd(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getNoteYmd(note) {
+  if (note.checkinDate) return note.checkinDate;
+  return formatYmd(new Date(toDateValue(note.createdAt)));
+}
+
+function getTrajectoryLocal(mode) {
+  const baseState = state();
+  const notes = activeNotes(baseState).filter((note) => note._openid === getOpenid());
+
+  if (!notes.length) {
+    return { mode, books: [], xLabels: [], nodes: [] };
+  }
+
+  const bookCounts = {};
+  notes.forEach((note) => {
+    const title = note.bookTitle || '未分类';
+    bookCounts[title] = (bookCounts[title] || 0) + 1;
+  });
+
+  const bookNames = Object.keys(bookCounts).sort((a, b) => bookCounts[b] - bookCounts[a]);
+  const books = bookNames.map((name, i) => {
+    const ratio = bookNames.length === 1 ? 0.5 : i / (bookNames.length - 1);
+    return {
+      name,
+      count: bookCounts[name],
+      color: TRAJECTORY_COLOR_PALETTE[i % TRAJECTORY_COLOR_PALETTE.length],
+      y: 0.12 + ratio * 0.76
+    };
+  });
+
+  let xLabels = [];
+  let nodes = [];
+
+  if (mode === 'day') {
+    // 日维度：首张笔记日期 → 最新笔记日期（全量）
+    const noteDates = notes.map((n) => getNoteYmd(n)).sort();
+    const firstYmd = noteDates[0];
+    const lastYmd = noteDates[noteDates.length - 1];
+    const [fy, fm, fd] = firstYmd.split('-').map(Number);
+    const [ly, lm, ld] = lastYmd.split('-').map(Number);
+    const start = new Date(fy, fm - 1, fd);
+    const end = new Date(ly, lm - 1, ld);
+
+    const days = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      days.push(new Date(d));
+    }
+    xLabels = days.map((d) => `${d.getMonth() + 1}/${d.getDate()}`);
+
+    days.forEach((d, idx) => {
+      const ymd = formatYmd(d);
+      const dayNotes = notes.filter((n) => getNoteYmd(n) === ymd);
+      if (!dayNotes.length) {
+        nodes.push({ x: idx, type: 'pause', day: ymd });
+        return;
+      }
+      const grouped = {};
+      dayNotes.forEach((note) => {
+        const title = note.bookTitle || '未分类';
+        if (!grouped[title]) grouped[title] = { count: 0, tag: '', text: '' };
+        grouped[title].count++;
+        if (!grouped[title].tag && note.tags && note.tags[0]) grouped[title].tag = note.tags[0];
+        if (!grouped[title].text && note.content) grouped[title].text = note.content;
+      });
+      Object.keys(grouped).forEach((title) => {
+        nodes.push({ x: idx, bookTitle: title, ...grouped[title], day: ymd });
+      });
+    });
+  } else if (mode === 'month') {
+    // 月维度：首张笔记年月 → 最新笔记年月（全量）
+    const noteMonths = notes.map((n) => {
+      const d = new Date(toDateValue(n.createdAt));
+      return { year: d.getFullYear(), month: d.getMonth() };
+    }).sort((a, b) => (a.year - b.year) || (a.month - b.month));
+    const first = noteMonths[0];
+    const last = noteMonths[noteMonths.length - 1];
+
+    const months = [];
+    let y = first.year, m = first.month;
+    while (y < last.year || (y === last.year && m <= last.month)) {
+      months.push({ year: y, month: m });
+      m++;
+      if (m > 11) { m = 0; y++; }
+    }
+    xLabels = months.map(({ year, month }) => `${year}/${month + 1}`);
+
+    months.forEach(({ year, month }, idx) => {
+      const monthNotes = notes.filter((n) => {
+        const d = new Date(toDateValue(n.createdAt));
+        return d.getFullYear() === year && d.getMonth() === month;
+      });
+      const grouped = {};
+      monthNotes.forEach((note) => {
+        const title = note.bookTitle || '未分类';
+        if (!grouped[title]) grouped[title] = { count: 0, tag: '', text: '' };
+        grouped[title].count++;
+        if (!grouped[title].tag && note.tags && note.tags[0]) grouped[title].tag = note.tags[0];
+        if (!grouped[title].text && note.content) grouped[title].text = note.content;
+      });
+      Object.keys(grouped).forEach((title) => {
+        nodes.push({ x: idx, bookTitle: title, ...grouped[title] });
+      });
+    });
+  } else if (mode === 'year') {
+    const years = [...new Set(notes.map((n) => new Date(toDateValue(n.createdAt)).getFullYear()))].sort((a, b) => a - b);
+    xLabels = years.map((y) => `${y}`);
+    years.forEach((y, idx) => {
+      const yearNotes = notes.filter((n) => new Date(toDateValue(n.createdAt)).getFullYear() === y);
+      const grouped = {};
+      yearNotes.forEach((note) => {
+        const title = note.bookTitle || '未分类';
+        if (!grouped[title]) grouped[title] = { count: 0, tag: '', text: '' };
+        grouped[title].count++;
+        if (!grouped[title].tag && note.tags && note.tags[0]) grouped[title].tag = note.tags[0];
+        if (!grouped[title].text && note.content) grouped[title].text = note.content;
+      });
+      Object.keys(grouped).forEach((title) => {
+        nodes.push({ x: idx, bookTitle: title, ...grouped[title], label: `${y}` });
+      });
+    });
+  }
+
+  return { mode, books, xLabels, nodes };
+}
+
+async function getTrajectoryDataAsync(mode = 'day') {
+  const now = Date.now();
+  const cache = _trajectoryCache[mode];
+  // 5 秒节流缓存
+  if (cache && now - cache.time < 5000) {
+    return cache.data;
+  }
+
+  const data = await withLocalFallback(
+    callCloud('getTrajectoryData', { mode }),
+    () => getTrajectoryLocal(mode),
+    'getTrajectoryData'
+  );
+
+  _trajectoryCache[mode] = { time: now, data };
+  return data;
+}
+
 module.exports = {
   callCloud,
   createTagAsync,
@@ -1151,6 +1325,7 @@ module.exports = {
   getReadingStatsAsync,
   getTags,
   getTagsAsync,
+  getTrajectoryDataAsync,
   getUsers,
   getUsersAsync,
   currentUser,
